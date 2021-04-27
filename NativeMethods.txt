@@ -1,0 +1,9 @@
+﻿// Exported method name (e.g. CreateFile). This may include the A or W suffix, where applicable.
+// Module name followed by .* to generate all methods exported from that module (e.g. Kernel32.*).
+// The name of a struct, enum, constant or interface to generate.
+// A comment (i.e. any line starting with //) or white space line, which will be ignored.
+SetWindowsHookEx
+GetModuleHandle
+CallNextHookEx
+KEYBDINPUT
+WM_KEYDOWN
