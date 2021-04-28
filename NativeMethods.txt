@@ -7,3 +7,4 @@ GetModuleHandle
 CallNextHookEx
 KEYBDINPUT
 WM_KEYDOWN
+WM_KEYUP

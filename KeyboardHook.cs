@@ -33,13 +33,19 @@ namespace Keyboard_Usurper
 			// KeyUp event
 			// if ((lParam.flags & 0x80) != 0 && this.KeyUp != null)
 			// this.KeyUp(this, new HookEventArgs(lParam.vkCode));
-
-			if (code == 0 && wParam.Value == Constants.WM_KEYDOWN) { System.Diagnostics.Debug.WriteLine("YOLO"); } 
+			if (code == 0 && wParam.Value == Constants.WM_KEYDOWN) 
+			{ 
+				System.Diagnostics.Debug.WriteLine("Key down event"); 
+			} 
 
 			// KeyDown event
 			// if ((lParam.flags & 0x80) == 0 && this.KeyDown != null)
 			// this.KeyDown(this, new HookEventArgs(lParam.vkCode));
-			
+			if (code == 0 && wParam.Value == Constants.WM_KEYUP) 
+			{ 
+				System.Diagnostics.Debug.WriteLine("Key up event"); 
+			} 
+
 			System.Diagnostics.Debug.WriteLine("Hello World!");
 
 			return PInvoke.CallNextHookEx(_hookHandle, code, wParam, lParam);
