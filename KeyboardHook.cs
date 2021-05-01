@@ -26,29 +26,47 @@ namespace Keyboard_Usurper
 		}
 
 		// private LRESULT HookCallBack(int code, IntPtr wParam, ref KBDLLHOOKSTRUCT lParam)
-		private LRESULT HookCallBack(int code, WPARAM wParam, LPARAM lParam)
+		private LRESULT HookCallBack(int nCode, WPARAM wParam, LPARAM lParam)
 		{
-			if (code < 0) return PInvoke.CallNextHookEx(_hookHandle, code, wParam, lParam);
+			try
+			{
+				if (nCode == Constants.HC_ACTION && (nuint)wParam == Constants.WM_KEYDOWN)
+				{
+					// System.Diagnostics.Debug.WriteLine("Event");
+					
+					try
+					{
+						KBDLLHOOKSTRUCT kbd = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+						System.Diagnostics.Debug.WriteLine(kbd);
+						System.Diagnostics.Debug.WriteLine(kbd.vkCode);
+						System.Diagnostics.Debug.WriteLine(kbd.dwExtraInfo);
+					}
+					catch (Exception ex)
+					{
+						System.Diagnostics.Debug.WriteLine("cast throw");
+						System.Diagnostics.Debug.WriteLine(ex);
+					}
+					return (LRESULT)1;
+				}
+			}
+			catch (Exception ex)
+			{
+				System.Diagnostics.Debug.WriteLine("big throw");
+				System.Diagnostics.Debug.WriteLine(ex);
+			}
 
-			// KeyUp event
-			// if ((lParam.flags & 0x80) != 0 && this.KeyUp != null)
-			// this.KeyUp(this, new HookEventArgs(lParam.vkCode));
-			if (code == 0 && wParam.Value == Constants.WM_KEYDOWN) 
-			{ 
-				System.Diagnostics.Debug.WriteLine("Key down event"); 
-			} 
 
-			// KeyDown event
-			// if ((lParam.flags & 0x80) == 0 && this.KeyDown != null)
-			// this.KeyDown(this, new HookEventArgs(lParam.vkCode));
-			if (code == 0 && wParam.Value == Constants.WM_KEYUP) 
-			{ 
-				System.Diagnostics.Debug.WriteLine("Key up event"); 
-			} 
+			// if (nCode == 0 && (nuint)wParam == Constants.WM_KEYDOWN) 
+			// { 
+			// 	System.Diagnostics.Debug.WriteLine("Key down event"); 
+			// } 
 
-			System.Diagnostics.Debug.WriteLine("Hello World!");
+			// if (nCode == 0 && (nuint)wParam == Constants.WM_KEYUP) 
+			// { 
+			// 	System.Diagnostics.Debug.WriteLine("Key up event"); 
+			// } 
 
-			return PInvoke.CallNextHookEx(_hookHandle, code, wParam, lParam);
+			return PInvoke.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
 
 		}
 
@@ -58,16 +76,22 @@ namespace Keyboard_Usurper
 			if (_hookHandle != null)
 				return;
 
+			// _hookHandle = PInvoke.SetWindowsHookEx(
+			// 	SetWindowsHookEx_idHook.WH_KEYBOARD_LL,
+			// 	_hookFunction,
+			// 	new SafeProcessHandle(PInvoke.GetModuleHandle((string)null), true),
+			// 	0);
+
 			_hookHandle = PInvoke.SetWindowsHookEx(
-				SetWindowsHookEx_idHook.WH_KEYBOARD_LL,
-				_hookFunction,
-				new SafeProcessHandle(PInvoke.GetModuleHandle((string)null), true),
-				0);
+			 	SetWindowsHookEx_idHook.WH_KEYBOARD_LL,
+			 	_hookFunction,
+			 	null,
+			 	0);
 
 			System.Diagnostics.Debug.WriteLine("Something to break on");
 		}
 
-		private void Uninstall()
+		public void Uninstall()
 		{
 			if (_hookHandle != null)
 			{
