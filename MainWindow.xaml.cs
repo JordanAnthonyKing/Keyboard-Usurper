@@ -24,14 +24,9 @@ namespace Keyboard_Usurper
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		private KeyboardHook _hook;
-
 		public MainWindow()
 		{
 			InitializeComponent();
-
-			_hook = new KeyboardHook();
-
 		}
 	}
 }
