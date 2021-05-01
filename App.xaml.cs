@@ -19,7 +19,15 @@ namespace Keyboard_Usurper
         [STAThread]
 		private void Usurp(object sender, StartupEventArgs e)
 		{
-			_hook = new KeyboardHook();
+			_hook = new KeyboardHook(
+				new Mapping
+				{
+					Mappings = new List<KeyToKey>()
+					{
+						new KeyToKey { From = vkCode.VK_NUMPAD0, To = vkCode.VK_NUMPAD9 }
+					}
+				}
+			); ;
 
 			MainWindow main = new MainWindow();
 			main.Show();
@@ -29,6 +37,5 @@ namespace Keyboard_Usurper
 		{
 			_hook.Uninstall();
 		}
-
 	}
 }

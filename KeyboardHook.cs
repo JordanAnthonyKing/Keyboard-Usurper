@@ -10,62 +10,43 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Keyboard_Usurper
 {
-	class KeyboardHook
+	public class KeyboardHook
 	{
-		UnhookWindowsHookExSafeHandle _hookHandle = null;
-		HOOKPROC _hookFunction = null;
+		private UnhookWindowsHookExSafeHandle _hookHandle = null;
+		private HOOKPROC _hookFunction = null;
+		private Mapping _mapping;
 
-		// public delegate void HookEventHandler(object sender, HookEventArgs e);
-		// public event HookEventHandler KeyDown;
-		// public event HookEventHandler KeyUp;
-
-		public KeyboardHook()
+		public KeyboardHook(Mapping mapping)
 		{
 			_hookFunction = new HOOKPROC(HookCallBack);
+			_mapping = mapping;
 			Install();
 		}
 
 		// private LRESULT HookCallBack(int code, IntPtr wParam, ref KBDLLHOOKSTRUCT lParam)
 		private LRESULT HookCallBack(int nCode, WPARAM wParam, LPARAM lParam)
 		{
-			try
+			if (nCode == Constants.HC_ACTION)
 			{
-				if (nCode == Constants.HC_ACTION && (nuint)wParam == Constants.WM_KEYDOWN)
+				KBDLLHOOKSTRUCT kbd = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+				System.Diagnostics.Debug.WriteLine(kbd.vkCode);
+				vkCode code = (vkCode)kbd.vkCode;
+				System.Diagnostics.Debug.WriteLine(code);
+
+				KeyToKey k2k = _mapping.Mappings.Find(x => (uint)x.From == kbd.vkCode);
+				if (k2k != null)
 				{
-					// System.Diagnostics.Debug.WriteLine("Event");
-					
-					try
-					{
-						KBDLLHOOKSTRUCT kbd = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
-						System.Diagnostics.Debug.WriteLine(kbd);
-						System.Diagnostics.Debug.WriteLine(kbd.vkCode);
-						System.Diagnostics.Debug.WriteLine(kbd.dwExtraInfo);
-					}
-					catch (Exception ex)
-					{
-						System.Diagnostics.Debug.WriteLine("cast throw");
-						System.Diagnostics.Debug.WriteLine(ex);
-					}
+					INPUT[] inputs = new INPUT[2];
+					inputs[0].type = INPUT_typeFlags.INPUT_KEYBOARD;
+					inputs[0].Anonymous.ki.wVk = (ushort)vkCode.VK_NUMPAD9;
+					inputs[1].type = INPUT_typeFlags.INPUT_KEYBOARD;
+					inputs[1].Anonymous.ki.wVk = (ushort)vkCode.VK_NUMPAD9;
+					inputs[1].Anonymous.ki.dwFlags = keybd_eventFlags.KEYEVENTF_KEYUP;
+
+					PInvoke.SendInput(new Span<INPUT>(inputs), Marshal.SizeOf<INPUT>());
 					return (LRESULT)1;
 				}
 			}
-			catch (Exception ex)
-			{
-				System.Diagnostics.Debug.WriteLine("big throw");
-				System.Diagnostics.Debug.WriteLine(ex);
-			}
-
-
-			// if (nCode == 0 && (nuint)wParam == Constants.WM_KEYDOWN) 
-			// { 
-			// 	System.Diagnostics.Debug.WriteLine("Key down event"); 
-			// } 
-
-			// if (nCode == 0 && (nuint)wParam == Constants.WM_KEYUP) 
-			// { 
-			// 	System.Diagnostics.Debug.WriteLine("Key up event"); 
-			// } 
-
 			return PInvoke.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
 
 		}
