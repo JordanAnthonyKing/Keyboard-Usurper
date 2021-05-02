@@ -5,6 +5,9 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.IO;
 
 namespace Keyboard_Usurper
 {
@@ -13,21 +16,15 @@ namespace Keyboard_Usurper
 	/// </summary>
 	public partial class App : Application
 	{
-
 		private KeyboardHook _hook;
 
         [STAThread]
 		private void Usurp(object sender, StartupEventArgs e)
 		{
-			_hook = new KeyboardHook(
-				new Mapping
-				{
-					Mappings = new List<KeyToKey>()
-					{
-						new KeyToKey { From = vkCode.VK_NUMPAD0, To = vkCode.VK_NUMPAD9 }
-					}
-				}
-			); ;
+			string jsonString = File.ReadAllText(Path.Combine(Environment.ExpandEnvironmentVariables("%HOMEDRIVE%%HOMEPATH%"), "usurper.json")); 
+			Configuration config = JsonSerializer.Deserialize<Configuration>(jsonString);
+
+			_hook = new KeyboardHook(ConfigurationToMapping.Convert(config));
 
 			MainWindow main = new MainWindow();
 			main.Show();
