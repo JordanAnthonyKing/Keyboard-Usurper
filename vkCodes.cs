@@ -265,6 +265,200 @@ namespace Keyboard_Usurper
 		VK_ZOOM = 0xFB,
 		VK_NONAME = 0xFC,
 		VK_PA1 = 0xFD,
-		VK_OWM_CLEAR = 0xFE
+		VK_OWM_CLEAR = 0xFE,
+		// This code is extra as there is no singular Win keycode
+		VK_WIN = 0xFF
 	}
+
+	public static class StringToCode
+	{
+		public static vkCode ConvertTo(string simpleName)
+		{
+			switch (simpleName)
+			{
+				case "LMB" : return vkCode.VK_LBUTTON;
+				case "RMB" : return vkCode.VK_RBUTTON;
+				case "CANCEL" : return vkCode.VK_CANCEL;
+				case "MMB" : return vkCode.VK_MBUTTON;
+				case "XB1" : return vkCode.VK_XBUTTON1;
+				case "XB2" : return vkCode.VK_XBUTTON2;
+				case "BS" : return vkCode.VK_BACK;
+				case "TAB" : return vkCode.VK_TAB;
+				case "CLEAR" : return vkCode.VK_CLEAR;
+				case "ENTER" : return vkCode.VK_RETURN;
+				case "RETURN" : return vkCode.VK_RETURN;
+				case "S" : return vkCode.VK_SHIFT;
+				case "C" : return vkCode.VK_CONTROL;
+				case "A" : return vkCode.VK_MENU;
+				case "PAUSE" : return vkCode.VK_PAUSE;
+				case "CAPS" : return vkCode.VK_CAPITAL;
+				case "KANA" : return vkCode.VK_KANA;
+				case "IME_ON" : return vkCode.VK_IME_ON;
+				case "JUNJA" : return vkCode.VK_JUNJA;
+				case "FINAL" : return vkCode.VK_FINAL;
+				case "HANJA" : return vkCode.VK_HANJA;
+				case "IME_OFF" : return vkCode.VK_IME_OFF;
+				case "ESC" : return vkCode.VK_ESCAPE;
+				case "CONVERT" : return vkCode.VK_CONVERT;
+				case "NONCONVERT" : return vkCode.VK_NONCONVERT;
+				case "ACCEPT" : return vkCode.VK_ACCEPT;
+				case "MODECHANGE" : return vkCode.VK_MODECHANGE;
+				case "SPC" : return vkCode.VK_SPACE;
+				case "PG_UP" : return vkCode.VK_PRIOR;
+				case "PG_DN" : return vkCode.VK_NEXT;
+				case "END" : return vkCode.VK_END;
+				case "HOME" : return vkCode.VK_HOME;
+				case "LEFT" : return vkCode.VK_LEFT;
+				case "UP" : return vkCode.VK_UP;
+				case "RIGHT" : return vkCode.VK_RIGHT;
+				case "DOWN" : return vkCode.VK_DOWN;
+				case "SELECT" : return vkCode.VK_SELECT;
+				case "PRINT" : return vkCode.VK_PRINT;
+				case "EXECUTE" : return vkCode.VK_EXECUTE;
+				case "PRT_SCR" : return vkCode.VK_SNAPSHOT;
+				case "INS" : return vkCode.VK_INSERT;
+				case "DEL" : return vkCode.VK_DELETE;
+				case "HELP" : return vkCode.VK_HELP;
+				case "0" : return vkCode.VK_0;
+				case "1" : return vkCode.VK_1;
+				case "2" : return vkCode.VK_2;
+				case "3" : return vkCode.VK_3;
+				case "4" : return vkCode.VK_4;
+				case "5" : return vkCode.VK_5;
+				case "6" : return vkCode.VK_6;
+				case "7" : return vkCode.VK_7;
+				case "8" : return vkCode.VK_8;
+				case "9" : return vkCode.VK_9;
+				case "a" : return vkCode.VK_A;
+				case "b" : return vkCode.VK_B;
+				case "c" : return vkCode.VK_C;
+				case "d" : return vkCode.VK_D;
+				case "e" : return vkCode.VK_E;
+				case "f" : return vkCode.VK_F;
+				case "g" : return vkCode.VK_G;
+				case "h" : return vkCode.VK_H;
+				case "i" : return vkCode.VK_I;
+				case "j" : return vkCode.VK_J;
+				case "k" : return vkCode.VK_K;
+				case "l" : return vkCode.VK_L;
+				case "m" : return vkCode.VK_M;
+				case "n" : return vkCode.VK_N;
+				case "o" : return vkCode.VK_O;
+				case "p" : return vkCode.VK_P;
+				case "q" : return vkCode.VK_Q;
+				case "r" : return vkCode.VK_R;
+				case "s" : return vkCode.VK_S;
+				case "t" : return vkCode.VK_T;
+				case "u" : return vkCode.VK_U;
+				case "v" : return vkCode.VK_V;
+				case "w" : return vkCode.VK_W;
+				case "x" : return vkCode.VK_X;
+				case "y" : return vkCode.VK_Y;
+				case "z" : return vkCode.VK_Z;
+				case "LW" : return vkCode.VK_LWIN;
+				case "RW" : return vkCode.VK_RWIN;
+				case "APPS" : return vkCode.VK_APPS;
+				case "SLEEP" : return vkCode.VK_SLEEP;
+				case "num_0" : return vkCode.VK_NUMPAD0;
+				case "num_1" : return vkCode.VK_NUMPAD1;
+				case "num_2" : return vkCode.VK_NUMPAD2;
+				case "num_3" : return vkCode.VK_NUMPAD3;
+				case "num_4" : return vkCode.VK_NUMPAD4;
+				case "num_5" : return vkCode.VK_NUMPAD5;
+				case "num_6" : return vkCode.VK_NUMPAD6;
+				case "num_7" : return vkCode.VK_NUMPAD7;
+				case "num_8" : return vkCode.VK_NUMPAD8;
+				case "num_9" : return vkCode.VK_NUMPAD9;
+				case "MUL" : return vkCode.VK_MULTIPLY;
+				case "ADD" : return vkCode.VK_ADD;
+				case "SEPARATOR" : return vkCode.VK_SEPARATOR;
+				case "SUB" : return vkCode.VK_SUBTRACT;
+				case "DEC" : return vkCode.VK_DECIMAL;
+				case "DIV" : return vkCode.VK_DIVIDE;
+				case "F1" : return vkCode.VK_F1;
+				case "F2" : return vkCode.VK_F2;
+				case "F3" : return vkCode.VK_F3;
+				case "F4" : return vkCode.VK_F4;
+				case "F5" : return vkCode.VK_F5;
+				case "F6" : return vkCode.VK_F6;
+				case "F7" : return vkCode.VK_F7;
+				case "F8" : return vkCode.VK_F8;
+				case "F9" : return vkCode.VK_F9;
+				case "F10" : return vkCode.VK_F10;
+				case "F11" : return vkCode.VK_F11;
+				case "F12" : return vkCode.VK_F12;
+				case "F13" : return vkCode.VK_F13;
+				case "F14" : return vkCode.VK_F14;
+				case "F15" : return vkCode.VK_F15;
+				case "F16" : return vkCode.VK_F16;
+				case "F17" : return vkCode.VK_F17;
+				case "F18" : return vkCode.VK_F18;
+				case "F19" : return vkCode.VK_F19;
+				case "F20" : return vkCode.VK_F20;
+				case "F21" : return vkCode.VK_F21;
+				case "F22" : return vkCode.VK_F22;
+				case "F23" : return vkCode.VK_F23;
+				case "F24" : return vkCode.VK_F24;
+				case "NUMLOCK" : return vkCode.VK_NUMLOCK;
+				case "SCRLOCK" : return vkCode.VK_SCROLL;
+				case "LS" : return vkCode.VK_LSHIFT;
+				case "RS" : return vkCode.VK_RSHIFT;
+				case "LC" : return vkCode.VK_LCONTROL;
+				case "RC" : return vkCode.VK_RCONTROL;
+				case "LA" : return vkCode.VK_LMENU;
+				case "LM" : return vkCode.VK_LMENU;
+				case "RA" : return vkCode.VK_RMENU;
+				case "RM" : return vkCode.VK_RMENU;
+				case "BACK" : return vkCode.VK_BROWSER_BACK;
+				case "FORW" : return vkCode.VK_BROWSER_FORWARD;
+				case "REFRESH" : return vkCode.VK_BROWSER_REFRESH;
+				case "STOP" : return vkCode.VK_BROWSER_STOP;
+				case "SEARCH" : return vkCode.VK_BROWSER_SEARCH;
+				case "FAV" : return vkCode.VK_BROWSER_FAVOURITES;
+				case "HOME_PG" : return vkCode.VK_BROWSER_HOME;
+				case "MUTE" : return vkCode.VK_VOLUME_MUTE;
+				case "VOL_DN" : return vkCode.VK_VOLUME_DOWN;
+				case "VOL_UP" : return vkCode.VK_VOLUME_UP;
+				case "M_NEXT" : return vkCode.VK_MEDIA_NEXT_TRACK;
+				case "M_PREV" : return vkCode.VK_MEDIA_PREV_TRACK;
+				case "M_STOP" : return vkCode.VK_MEDIA_STOP;
+				case "M_PLAY_PAUSE" : return vkCode.VK_MEDIA_PLAY_PAUSE;
+				case "MAIL" : return vkCode.VK_LAUNCH_MAIL;
+				case "MEDIA" : return vkCode.VK_LAUNCH_MEDIA_SELECT;
+				case "APP1" : return vkCode.VK_LAUNCH_APP_1;
+				case "APP2" : return vkCode.VK_LAUNCH_APP_2;
+				case ";" : return vkCode.VK_OEM_1;
+				case "+" : return vkCode.VK_OEM_PLUS;
+				case "," : return vkCode.VK_OEM_COMMA;
+				case "-" : return vkCode.VK_MINUS;
+				case "." : return vkCode.VK_PERIOD;
+				case "/" : return vkCode.VK_OEM_2;
+				case "~" : return vkCode.VK_OEM_3;
+				case "[" : return vkCode.VK_OEM_4;
+				case "\\" : return vkCode.VK_OEM_5;
+				case "]" : return vkCode.VK_OEM_6;
+				case "'" : return vkCode.VK_OEM_7;
+				// TODO: Figure out what this is on a UK keyboard
+				case "TODO" : return vkCode.VK_OEM_8;
+				case "TODO2" : return vkCode.VK_OEM_102;
+				case "PROCESS" : return vkCode.VK_PROCESS_KEY;
+				// Not allowed
+				// case "" : return vkCode.VK_PACKET;
+				case "ATTN" : return vkCode.VK_ATTN;
+				case "CRSEL" : return vkCode.VK_CRSEL;
+				case "EXSEL" : return vkCode.VK_EXSEL;
+				case "EREOF" : return vkCode.VK_EREOF;
+				case "PLAY" : return vkCode.VK_PLAY;
+				case "ZOOM" : return vkCode.VK_ZOOM;
+				// Reserved
+				// case "" : return vkCode.VK_NONAME;
+				case "PA1" : return vkCode.VK_PA1;
+				case "OEM_CLEAR" : return vkCode.VK_OWM_CLEAR;
+				case "W" : return vkCode.VK_WIN;
+			}
+
+			return vkCode.VK_0;
+		}
+	}
+
 }
