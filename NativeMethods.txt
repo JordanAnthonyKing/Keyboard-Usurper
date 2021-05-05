@@ -12,3 +12,4 @@ KBDLLHOOKSTRUCT
 VK_LBUTTON
 SendInput
 INPUT
+GetAsyncKeyState
