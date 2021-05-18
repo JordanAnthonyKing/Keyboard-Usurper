@@ -267,7 +267,8 @@ namespace Keyboard_Usurper
 		VK_PA1 = 0xFD,
 		VK_OWM_CLEAR = 0xFE,
 		// This code is extra as there is no singular Win keycode
-		VK_WIN = 0xFF
+		VK_WIN = 0xFF,
+		VK_NULL = 0x00
 	}
 
 	public static class StringToCode

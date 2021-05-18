@@ -31,24 +31,28 @@ namespace Keyboard_Usurper
 		NumEvents
 	}
 
+	public enum Action
+	{
+		DiscardKey,
+		TapActivationKey,
+		DelayKeyDown,
+		MapKeyUp,
+		MapKeyDown,
+		ActivationKeyDownThenKey,
+		EmitActDownSavedDownActUp,
+		MapSavedAndMapCurrentDown,
+		MapSavedAndMapCurrentUp,
+		EmitActSavedAndCurrentDown,
+		EmitActSavedAndCurrentUp,
+		EmitSavedDownAndActUp,
+		EmitSavedAndCurrentDown,
+		DiscardKeyAndReleaseMappedKeys,
+		RunConfigure,
+		Null
+	}
+
 	public class StateMachine
 	{
-		public event EventHandler DiscardKey;
-		public event EventHandler TapActivationKey;
-		public event EventHandler DelayKeyDown;
-		public event EventHandler MapKeyUp;
-		public event EventHandler MapKeyDown;
-		public event EventHandler ActivationKeyDownThenKey;
-		public event EventHandler EmitActDownSavedDownActUp;
-		public event EventHandler MapSavedAndMapCurrentDown;
-		public event EventHandler MapSavedAndMapCurrentUp;
-		public event EventHandler EmitActSavedAndCurrentDown;
-		public event EventHandler EmitActSavedAndCurrentUp;
-		public event EventHandler EmitSavedDownAndActUp;
-		public event EventHandler EmitSavedAndCurrentDown;
-		public event EventHandler DiscardKeyAndReleaseMappedKeys;
-		// TODO: Figure out how to null this
-		public event EventHandler RunConfigure;
 
 		private class StartState
 		{
@@ -78,7 +82,7 @@ namespace Keyboard_Usurper
 			public readonly State NewState;
 			public readonly EventHandler Action;
 
-			public EndState(State newState, EventHandler action)
+			public EndState(State newState, Action action)
 			{
 				NewState = newState;
 				Action = action;
@@ -105,58 +109,58 @@ namespace Keyboard_Usurper
 			transitions = new Dictionary<StartState, EndState>
 			{
 				// Idle
-				{ new StartState(State.Idle, Event.ActivationDown), new EndState(State.WaitMappedDown, DiscardKey) },
-				{ new StartState(State.Idle, Event.ActivationUp),   new EndState(State.Self, null) },
-				{ new StartState(State.Idle, Event.MappedKeyDown),  new EndState(State.Self, null) },
-				{ new StartState(State.Idle, Event.MappedKeyUp),    new EndState(State.Self, null) },
-				{ new StartState(State.Idle, Event.OtherKeyDown),   new EndState(State.Self, null) },
-				{ new StartState(State.Idle, Event.OtherKeyUp),     new EndState(State.Self, null) },
-				{ new StartState(State.Idle, Event.ConfigKeyDown),  new EndState(State.Self, null) },
+				{ new StartState(State.Idle, Event.ActivationDown), new EndState(State.WaitMappedDown, Action.DiscardKey) },
+				{ new StartState(State.Idle, Event.ActivationUp),   new EndState(State.Self, Action.Null) },
+				{ new StartState(State.Idle, Event.MappedKeyDown),  new EndState(State.Self, Action.Null) },
+				{ new StartState(State.Idle, Event.MappedKeyUp),    new EndState(State.Self, Action.Null) },
+				{ new StartState(State.Idle, Event.OtherKeyDown),   new EndState(State.Self, Action.Null) },
+				{ new StartState(State.Idle, Event.OtherKeyUp),     new EndState(State.Self, Action.Null) },
+				{ new StartState(State.Idle, Event.ConfigKeyDown),  new EndState(State.Self, Action.Null) },
 				// WaitMappedDown
-				{ new StartState(State.WaitMappedDown, Event.ActivationDown), new EndState(State.Self, DiscardKey) },
-				{ new StartState(State.WaitMappedDown, Event.ActivationUp),   new EndState(State.Idle, TapActivationKey) },
-				{ new StartState(State.WaitMappedDown, Event.MappedKeyDown),  new EndState(State.WaitMappedUp, DelayKeyDown) },
-				{ new StartState(State.WaitMappedDown, Event.MappedKeyUp),    new EndState(State.Self, null) },
-				{ new StartState(State.WaitMappedDown, Event.OtherKeyDown),   new EndState(State.WaitMappedDownSpaceEmitted, ActivationKeyDownThenKey) },
-				{ new StartState(State.WaitMappedDown, Event.OtherKeyUp),     new EndState(State.Self, null) },
+				{ new StartState(State.WaitMappedDown, Event.ActivationDown), new EndState(State.Self, Action.DiscardKey) },
+				{ new StartState(State.WaitMappedDown, Event.ActivationUp),   new EndState(State.Idle, Action.TapActivationKey) },
+				{ new StartState(State.WaitMappedDown, Event.MappedKeyDown),  new EndState(State.WaitMappedUp, Action.DelayKeyDown) },
+				{ new StartState(State.WaitMappedDown, Event.MappedKeyUp),    new EndState(State.Self, Action.Null) },
+				{ new StartState(State.WaitMappedDown, Event.OtherKeyDown),   new EndState(State.WaitMappedDownSpaceEmitted, Action.ActivationKeyDownThenKey) },
+				{ new StartState(State.WaitMappedDown, Event.OtherKeyUp),     new EndState(State.Self, Action.Null) },
 				// TODO: We don't have this configure stuff
-				{ new StartState(State.WaitMappedDown, Event.ConfigKeyDown),  new EndState(State.Self, RunConfigure) },
+				{ new StartState(State.WaitMappedDown, Event.ConfigKeyDown),  new EndState(State.Self, Action.RunConfigure) },
 				// WaitMappedDownSpaceEmitted
-				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.ActivationDown), new EndState(State.Self, DiscardKey) },
-				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.ActivationUp),   new EndState(State.Idle, null) },
-				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.MappedKeyDown),  new EndState(State.WaitMappedUpSpaceEmitted, DelayKeyDown) },
-				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.MappedKeyUp),    new EndState(State.Self, null) },
-				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.OtherKeyDown),   new EndState(State.Self, null) },
-				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.OtherKeyUp),     new EndState(State.Self, null) },
-				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.ConfigKeyDown),  new EndState(State.Self, RunConfigure) },
+				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.ActivationDown), new EndState(State.Self, Action.DiscardKey) },
+				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.ActivationUp),   new EndState(State.Idle, Action.Null) },
+				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.MappedKeyDown),  new EndState(State.WaitMappedUpSpaceEmitted, Action.DelayKeyDown) },
+				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.MappedKeyUp),    new EndState(State.Self, Action.Null) },
+				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.OtherKeyDown),   new EndState(State.Self, Action.Null) },
+				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.OtherKeyUp),     new EndState(State.Self, Action.Null) },
+				{ new StartState(State.WaitMappedDownSpaceEmitted, Event.ConfigKeyDown),  new EndState(State.Self, Action.RunConfigure) },
 				// WaitMappedUp (still might emit the activation key)
-				{ new StartState(State.WaitMappedUp, Event.ActivationDown), new EndState(State.Self, DiscardKey) },
-				{ new StartState(State.WaitMappedUp, Event.ActivationUp),   new EndState(State.Idle, EmitActDownSavedDownActUp) },
-				{ new StartState(State.WaitMappedUp, Event.MappedKeyDown),  new EndState(State.Mapping, MapSavedAndMapCurrentDown) },
-				{ new StartState(State.WaitMappedUp, Event.MappedKeyUp),    new EndState(State.Mapping, MapSavedAndMapCurrentUp) },
-				{ new StartState(State.WaitMappedUp, Event.OtherKeyDown),   new EndState(State.Idle, EmitActSavedAndCurrentDown) },
-				{ new StartState(State.WaitMappedUp, Event.OtherKeyUp),     new EndState(State.WaitMappedUpSpaceEmitted, EmitActSavedAndCurrentUp) },
-				{ new StartState(State.WaitMappedUp, Event.ConfigKeyDown),  new EndState(State.Self, RunConfigure) },
+				{ new StartState(State.WaitMappedUp, Event.ActivationDown), new EndState(State.Self, Action.DiscardKey) },
+				{ new StartState(State.WaitMappedUp, Event.ActivationUp),   new EndState(State.Idle, Action.EmitActDownSavedDownActUp) },
+				{ new StartState(State.WaitMappedUp, Event.MappedKeyDown),  new EndState(State.Mapping, Action.MapSavedAndMapCurrentDown) },
+				{ new StartState(State.WaitMappedUp, Event.MappedKeyUp),    new EndState(State.Mapping, Action.MapSavedAndMapCurrentUp) },
+				{ new StartState(State.WaitMappedUp, Event.OtherKeyDown),   new EndState(State.Idle, Action.EmitActSavedAndCurrentDown) },
+				{ new StartState(State.WaitMappedUp, Event.OtherKeyUp),     new EndState(State.WaitMappedUpSpaceEmitted, Action.EmitActSavedAndCurrentUp) },
+				{ new StartState(State.WaitMappedUp, Event.ConfigKeyDown),  new EndState(State.Self, Action.RunConfigure) },
 				// WaitMappedUpSpaceEmitted
-				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.ActivationDown), new EndState(State.Self, DiscardKey) },
-				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.ActivationUp),   new EndState(State.Idle, EmitSavedDownAndActUp) },
-				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.MappedKeyDown),  new EndState(State.Mapping, MapSavedAndMapCurrentDown) },
-				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.MappedKeyUp),    new EndState(State.Mapping, MapSavedAndMapCurrentUp) },
-				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.OtherKeyDown),   new EndState(State.Idle, EmitSavedAndCurrentDown) },
-				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.OtherKeyUp),     new EndState(State.Self, null) },
-				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.ConfigKeyDown),  new EndState(State.Self, RunConfigure) },
+				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.ActivationDown), new EndState(State.Self, Action.DiscardKey) },
+				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.ActivationUp),   new EndState(State.Idle, Action.EmitSavedDownAndActUp) },
+				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.MappedKeyDown),  new EndState(State.Mapping, Action.MapSavedAndMapCurrentDown) },
+				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.MappedKeyUp),    new EndState(State.Mapping, Action.MapSavedAndMapCurrentUp) },
+				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.OtherKeyDown),   new EndState(State.Idle, Action.EmitSavedAndCurrentDown) },
+				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.OtherKeyUp),     new EndState(State.Self, Action.Null) },
+				{ new StartState(State.WaitMappedUpSpaceEmitted, Event.ConfigKeyDown),  new EndState(State.Self, Action.RunConfigure) },
 				// Mapping (definitely eaten the activation key)
-				{ new StartState(State.Mapping, Event.ActivationDown), new EndState(State.Self, DiscardKey) },
-				{ new StartState(State.Mapping, Event.ActivationUp),   new EndState(State.Idle, DiscardKeyAndReleaseMappedKeys) },
-				{ new StartState(State.Mapping, Event.MappedKeyDown),  new EndState(State.Mapping, MapKeyDown) },
-				{ new StartState(State.Mapping, Event.MappedKeyUp),    new EndState(State.Mapping, MapKeyUp) },
-				{ new StartState(State.Mapping, Event.OtherKeyDown),   new EndState(State.Idle, null) },
-				{ new StartState(State.Mapping, Event.OtherKeyUp),     new EndState(State.Self, null) },
-				{ new StartState(State.Mapping, Event.ConfigKeyDown),  new EndState(State.Self, RunConfigure) },
+				{ new StartState(State.Mapping, Event.ActivationDown), new EndState(State.Self, Action.DiscardKey) },
+				{ new StartState(State.Mapping, Event.ActivationUp),   new EndState(State.Idle, Action.DiscardKeyAndReleaseMappedKeys) },
+				{ new StartState(State.Mapping, Event.MappedKeyDown),  new EndState(State.Mapping, Action.MapKeyDown) },
+				{ new StartState(State.Mapping, Event.MappedKeyUp),    new EndState(State.Mapping, Action.MapKeyUp) },
+				{ new StartState(State.Mapping, Event.OtherKeyDown),   new EndState(State.Idle, Action.Null) },
+				{ new StartState(State.Mapping, Event.OtherKeyUp),     new EndState(State.Self, Action.Null) },
+				{ new StartState(State.Mapping, Event.ConfigKeyDown),  new EndState(State.Self, Action.RunConfigure) },
 			};
 		}
 
-		private EndState GetNext(Event command)
+		public EndState GetNext(Event command)
 		{
 			StartState transition = new StartState(CurrentState, command);
 			EndState endState;
