@@ -80,7 +80,7 @@ namespace Keyboard_Usurper
 		public class EndState
 		{
 			public readonly State NewState;
-			public readonly EventHandler Action;
+			public readonly Action Action;
 
 			public EndState(State newState, Action action)
 			{
@@ -102,6 +102,7 @@ namespace Keyboard_Usurper
 
 		Dictionary<StartState, EndState> transitions;
 		public State CurrentState { get; private set; }
+		public Action CurrentAction { get; private set; }
 
 		public StateMachine()
 		{
@@ -173,7 +174,7 @@ namespace Keyboard_Usurper
 		{
 			EndState endState = GetNext(command);
 			CurrentState = endState.NewState;
-			endState.Action?.Invoke(this, new EventArgs());
+			CurrentAction = endState.Action;
 		}
 	}
 }

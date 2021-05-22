@@ -84,25 +84,41 @@ namespace Keyboard_Usurper
 				_stateMachine.MoveNext(e);
 
 			// TODO
-			switch (_stateMachine.CurrentState)
+			switch (_stateMachine.CurrentAction)
 			{
-				case State.Idle:
+				case Action.DiscardKey:
+					return DiscardKey(code);
+				case Action.TapActivationKey:
+					return TapActivationKey(code);
+				case Action.DelayKeyDown:
+					return DelayKeyDown(code);
+				case Action.MapKeyUp:
+					return MapKeyUp(code);
+				case Action.MapKeyDown:
+					return MapKeyDown(code);
+				case Action.ActivationKeyDownThenKey:
+					return ActivationKeyDownThenKey(code);
+				case Action.EmitActDownSavedDownActUp:
+					return EmitActDownSavedDownActUp(code);
+				case Action.MapSavedAndMapCurrentDown:
+					return MapSavedAndMapCurrentDown(code);
+				case Action.MapSavedAndMapCurrentUp:
+					return MapSavedAndMapCurrentUp(code);
+				case Action.EmitActSavedAndCurrentDown:
+					return EmitActSavedAndCurrentDown(code);
+				case Action.EmitActSavedAndCurrentUp:
+					return EmitActSavedAndCurrentUp(code);
+				case Action.EmitSavedDownAndActUp:
+					return EmitSavedDownAndActUp(code);
+				case Action.EmitSavedAndCurrentDown:
+					return EmitSavedAndCurrentDown(code);
+				case Action.DiscardKeyAndReleaseMappedKeys:
+					return DiscardKeyAndReleaseMappedKeys(code);
+				case Action.RunConfigure:
+					// return RunConfigure();
 					break;
-				case State.WaitMappedDown:
-					break;
-				case State.WaitMappedDownSpaceEmitted:
-					break;
-				case State.WaitMappedUp:
-					break;
-				case State.WaitMappedUpSpaceEmitted:
-					break;
-				case State.Mapping:
-					break;
-				case State.NumStates:
-					break;
-				case State.Self:
-					break;
-				case State.NA:
+				case Action.Null:
+					// Do nothing
 					break;
 			}
 
@@ -125,6 +141,78 @@ namespace Keyboard_Usurper
 			return (nuint)wParam == Constants.WM_KEYDOWN || 
 				(nuint)wParam == Constants.WM_SYSKEYDOWN;
 		}
+
+		private bool DiscardKey(vkCode code)
+		{
+			return true;
+		}
+
+		private bool DiscardKeyAndReleaseMappedKeys(vkCode code) 
+		{
+			return true;	
+		}
+
+		private bool TapActivationKey(vkCode code)
+		{
+			return true;
+		}
+
+		private bool ActivationKeyDownThenKey(vkCode code)
+		{
+			return true;
+		}
+
+		private bool MapKeyDown(vkCode code)
+		{
+			return true;
+		}
+
+		private bool MapKeyUp(vkCode code)
+		{
+			return true;
+		}
+
+		private bool DelayKeyDown(vkCode code)
+		{
+			return true;
+		}
+
+		private bool EmitSaved(vkCode code)
+		{
+			return true;
+		}
+
+    private bool EmitActDownSavedDownActUp(vkCode code) {
+        return true;
+    }
+
+    private bool EmitSavedDownAndActUp(vkCode code) {
+        return true;
+    }
+
+    private void MapSavedDown() { }
+
+    private bool MapSavedAndMapCurrentDown(vkCode code) {
+        return true;
+    }
+
+    private bool MapSavedAndMapCurrentUp(vkCode code) {
+        return true;
+    }
+
+    private bool EmitActSavedAndCurrentDown(vkCode code) {
+        return true;
+    }
+
+    private bool EmitActSavedAndCurrentUp(vkCode code) {
+        return true;
+    }
+
+    private bool EmitSavedAndCurrentDown(vkCode code) {
+        return true;
+    }
+
+
 
 		private void Install()
 		{
