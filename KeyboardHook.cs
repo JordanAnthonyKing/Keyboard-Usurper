@@ -19,6 +19,10 @@ namespace Keyboard_Usurper
 		private vkCode[] _extraMods;
 		private List<vkCode> _expectedInputs = new();
 
+		// TODO: Remove this
+		private vkCode _activationKey = vkCode.VK_SPACE;
+		private vkCode _savedKeyDown = vkCode.VK_NULL;
+
 		private readonly StateMachine _stateMachine = new StateMachine();
 
 		public KeyboardHook(Mapping mapping)
@@ -87,7 +91,7 @@ namespace Keyboard_Usurper
 			switch (_stateMachine.CurrentAction)
 			{
 				case Action.DiscardKey:
-					return DiscardKey(code);
+					return DiscardKey();
 				case Action.TapActivationKey:
 					return TapActivationKey(code);
 				case Action.DelayKeyDown:
@@ -125,6 +129,7 @@ namespace Keyboard_Usurper
 			return false;
 		}
 
+		// TODO: Remove or change this
 		private void SendInput(vkCode code, bool up = false)
 		{
 			INPUT[] inputs = new INPUT[1];
@@ -142,77 +147,161 @@ namespace Keyboard_Usurper
 				(nuint)wParam == Constants.WM_SYSKEYDOWN;
 		}
 
-		private bool DiscardKey(vkCode code)
+		private bool MapKey(vkCode code, bool up)
 		{
-			return true;
+			vkCode newCode = TranslateCode(code);
+
+			if (newCode != vkCode.VK_NULL)
+			{
+				// TODO: Some logic
+				KeyEvent(newCode, up);
+				return true;
+			}
+			return false;
 		}
+
+		private bool DiscardKey() => true;
 
 		private bool DiscardKeyAndReleaseMappedKeys(vkCode code) 
 		{
+			// TODO: 'Mapped' keys logic
+
 			return true;	
 		}
 
 		private bool TapActivationKey(vkCode code)
 		{
+			TapKey(_activationKey);
 			return true;
 		}
 
 		private bool ActivationKeyDownThenKey(vkCode code)
 		{
+			KeyDown(_activationKey);
+			KeyDown(code);
 			return true;
 		}
 
 		private bool MapKeyDown(vkCode code)
 		{
-			return true;
+			return MapKey(code, false);
 		}
 
 		private bool MapKeyUp(vkCode code)
 		{
-			return true;
+			return MapKey(code, false);
 		}
 
 		private bool DelayKeyDown(vkCode code)
 		{
+			// touchcursor has some assert logic here to make sure
+			// the program doesn't get stuck in a bad state
+			// but I think it will be unneeded here
+
+			_savedKeyDown = code;
 			return true;
 		}
 
 		private bool EmitSaved(vkCode code)
 		{
+			if (_savedKeyDown != vkCode.VK_NULL)
+			{
+				KeyDown(code);
+				_savedKeyDown = vkCode.VK_NULL;
+			}
 			return true;
 		}
 
-    private bool EmitActDownSavedDownActUp(vkCode code) {
-        return true;
-    }
+		private bool EmitActDownSavedDownActUp(vkCode code) 
+		{
+			KeyDown(_activationKey);
+			EmitSaved(code);
+			KeyUp(_activationKey);
+			return true;
+		}
 
-    private bool EmitSavedDownAndActUp(vkCode code) {
-        return true;
-    }
+		private bool EmitSavedDownAndActUp(vkCode code) {
+			EmitSaved(code);
+			KeyUp(_activationKey);
+			return true;
+		}
 
-    private void MapSavedDown() { }
+		private void MapSavedDown() 
+		{
+			if (_savedKeyDown != vkCode.VK_NULL)
+			{
+				MapKeyDown(_savedKeyDown);
+				_savedKeyDown = vkCode.VK_NULL;
+			}
+		}
 
-    private bool MapSavedAndMapCurrentDown(vkCode code) {
-        return true;
-    }
+		private bool MapSavedAndMapCurrentDown(vkCode code) 
+		{
+			MapSavedDown();
+			MapKeyDown(code);
+			return true;
+		}
 
-    private bool MapSavedAndMapCurrentUp(vkCode code) {
-        return true;
-    }
+		private bool MapSavedAndMapCurrentUp(vkCode code) {
+			MapSavedDown();
+			MapKeyUp(code);
+			return true;
+		}
 
-    private bool EmitActSavedAndCurrentDown(vkCode code) {
-        return true;
-    }
+		private bool EmitActSavedAndCurrentDown(vkCode code) {
+			KeyDown(_activationKey);
+			EmitSaved(code);
+			KeyDown(code);
+			return true;
+		}
 
-    private bool EmitActSavedAndCurrentUp(vkCode code) {
-        return true;
-    }
+		private bool EmitActSavedAndCurrentUp(vkCode code) {
+			KeyDown(_activationKey);
+			EmitSaved(code);
+			KeyUp(code);
+			return true;
+		}
 
-    private bool EmitSavedAndCurrentDown(vkCode code) {
-        return true;
-    }
+		private bool EmitSavedAndCurrentDown(vkCode code) {
+			EmitSaved(code);
+			KeyDown(code);
+			return true;
+		}
 
+		private void TapKey(vkCode code)
+		{
+			KeyDown(code);
+			KeyUp(code);
+		}
 
+		private void KeyDown(vkCode code)
+		{
+			KeyEvent(code, false);
+		}
+
+		private void KeyUp(vkCode code)
+		{
+			KeyEvent(code, true);
+		}
+
+		private void KeyEvent(vkCode code, bool up)
+		{
+			if (!up)
+			{
+				// TODO: Add modifiers
+			}
+			SendInput(code, up);
+			if (!up)
+			{
+				// Something else?
+			}
+		}
+
+		// TODO
+		private vkCode TranslateCode(vkCode code)
+		{
+			return vkCode.VK_NULL;
+		}
 
 		private void Install()
 		{
