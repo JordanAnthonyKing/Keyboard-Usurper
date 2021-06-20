@@ -1,13 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Windows.Sdk;
 using System.Runtime.InteropServices;
-using System.Reflection;
-using Microsoft.Win32.SafeHandles;
-using System.Threading;
 
 namespace Keyboard_Usurper
 {
@@ -16,14 +11,25 @@ namespace Keyboard_Usurper
 		private UnhookWindowsHookExSafeHandle _hookHandle = null;
 		private HOOKPROC _hookProc;
 		private Mapping _mapping;
+		private vkCode[] _mods = new vkCode[]{ 
+			vkCode.VK_LSHIFT,
+			vkCode.VK_RSHIFT,
+			vkCode.VK_LWIN,
+			vkCode.VK_RWIN,
+			vkCode.VK_LCONTROL,
+			vkCode.VK_RCONTROL,
+			vkCode.VK_LMENU,
+			vkCode.VK_RMENU
+		};
 		private vkCode[] _extraMods;
 		private List<vkCode> _expectedInputs = new();
 
-		// TODO: Remove this
+		// TODO: Rewrite this for arbitrary keys
 		private vkCode _activationKey = vkCode.VK_SPACE;
 		private vkCode _savedKeyDown = vkCode.VK_NULL;
 
 		private readonly StateMachine _stateMachine = new StateMachine();
+		private readonly List<vkCode> _mappedKeysHeld = new List<vkCode>();
 
 		public KeyboardHook(Mapping mapping)
 		{
@@ -35,6 +41,7 @@ namespace Keyboard_Usurper
 			{
 				foreach(vkCode mod in x.From.Mods)
 				{
+					// I'm reconsidering the idea of having combined shift keys
 					if (mod != vkCode.VK_SHIFT &&
 						mod != vkCode.VK_CONTROL &&
 						mod != vkCode.VK_MENU &&
@@ -54,6 +61,7 @@ namespace Keyboard_Usurper
 			if (nCode == Constants.HC_ACTION)
 			{
 				KBDLLHOOKSTRUCT kbd = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
+				ProcessKey(wParam, (vkCode)kbd.vkCode);
 			}
 
 			return PInvoke.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
@@ -61,23 +69,28 @@ namespace Keyboard_Usurper
 
 		private bool ProcessKey(WPARAM wParam, vkCode code)
 		{
+			// TODO: If it's a normal mod and the mod isn't remapped we need to skip over it?
+			// A normal mod will skip over itself by falling out of the logic.
+			// Touch cursor expects only one activation key, we have many, therefore we need
+			// to track them.
+			// I don't know if we should do this with async checks or by the same as _mappedKeys
+
+
 			Event e = Event.NumEvents;
 
 			if (_extraMods.Contains(code))
 			{
 				e = IsKeyDown(wParam) ? Event.ActivationDown : Event.ActivationUp;
 			}
-			else if (_mapping.Mappings.Exists(x => x.To.Code == code)) 
+			// else if (_mapping.Mappings.Exists(x => x.To.Code == code)) 
+			else if (TranslateCode(code) != vkCode.VK_NULL) 
 			{
-				// This isn't really right yet because we have multiple mappings
-				// Perhaps we need to presort the mappings or something
 				e = IsKeyDown(wParam) ? Event.MappedKeyDown : Event.MappedKeyUp;
 			}
 			else
 			{
 				e = IsKeyDown(wParam) ? Event.OtherKeyDown : Event.OtherKeyUp;
 			}
-
 			// State machine
 			return ProcessEvent(e, code);
 		}
@@ -87,7 +100,6 @@ namespace Keyboard_Usurper
 			if (_stateMachine.GetNext(e).NewState != State.Self)	
 				_stateMachine.MoveNext(e);
 
-			// TODO
 			switch (_stateMachine.CurrentAction)
 			{
 				case Action.DiscardKey:
@@ -153,7 +165,16 @@ namespace Keyboard_Usurper
 
 			if (newCode != vkCode.VK_NULL)
 			{
-				// TODO: Some logic
+				if (!up)
+				{
+					_mappedKeysHeld.Add(newCode);
+				}	
+				else
+				{
+					// This may need a try block
+					_mappedKeysHeld.Remove(newCode);
+				}
+				
 				KeyEvent(newCode, up);
 				return true;
 			}
@@ -164,8 +185,15 @@ namespace Keyboard_Usurper
 
 		private bool DiscardKeyAndReleaseMappedKeys(vkCode code) 
 		{
-			// TODO: 'Mapped' keys logic
-
+			_mappedKeysHeld.ForEach(k =>
+			{
+				_mappedKeysHeld.ForEach(k =>
+				{
+					SendInput(k, false);
+				});
+				_mappedKeysHeld.Remove(k);
+				KeyEvent(k, true);
+			});
 			return true;	
 		}
 
@@ -286,20 +314,28 @@ namespace Keyboard_Usurper
 
 		private void KeyEvent(vkCode code, bool up)
 		{
-			if (!up)
+			if (!up) // Only add modifiers on key down
 			{
-				// TODO: Add modifiers
+				_mappedKeysHeld.ForEach(k =>
+				{
+					SendInput(k, false);
+				});
 			}
 			SendInput(code, up);
 			if (!up)
 			{
-				// Something else?
+				_mappedKeysHeld.ForEach(k =>
+				{
+					SendInput(k, false);
+				});
 			}
 		}
 
 		// TODO
 		private vkCode TranslateCode(vkCode code)
 		{
+			// This is where all the mapping is done
+
 			return vkCode.VK_NULL;
 		}
 

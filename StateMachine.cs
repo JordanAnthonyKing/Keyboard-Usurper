@@ -109,6 +109,7 @@ namespace Keyboard_Usurper
 			CurrentState = State.Idle;
 			transitions = new Dictionary<StartState, EndState>
 			{
+				// TODO: Something may need doing in here to have multiple activation keys
 				// Idle
 				{ new StartState(State.Idle, Event.ActivationDown), new EndState(State.WaitMappedDown, Action.DiscardKey) },
 				{ new StartState(State.Idle, Event.ActivationUp),   new EndState(State.Self, Action.Null) },
