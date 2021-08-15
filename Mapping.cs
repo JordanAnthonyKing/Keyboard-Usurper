@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace Keyboard_Usurper
 {
+	// TODO: Probably rename this to Mappings
 	public class Mapping
 	{
 		public List<KeyToKey> Mappings = new();

@@ -21,34 +21,39 @@ namespace Keyboard_Usurper
 			vkCode.VK_LMENU,
 			vkCode.VK_RMENU
 		};
-		private vkCode[] _extraMods;
+		// Don't think I need this anymore
+		// private vkCode[] _extraMods;
 		private List<vkCode> _expectedInputs = new();
 
 		// TODO: Rewrite this for arbitrary keys
-		private readonly StateMachine _stateMachine = new StateMachine();
+		// private readonly StateMachine _stateMachine = new StateMachine();
+
+		private readonly List<StateMachine> topLevelMachines = new List<StateMachine>();
 
 		public KeyboardHook(Mapping mapping)
 		{
 			_mapping = mapping;
 			_hookProc =  new HOOKPROC(HookCallBack);
 
+			List<vkCode> usedMods = new List<vkCode>();
+
+			// TODO: Recurse over this
 			List<vkCode> extraMods = new();
 			_mapping.Mappings.ForEach(x =>
 			{
-				foreach(vkCode mod in x.From.Mods)
+				vkCode mod = x.From.Mods.FirstOrDefault();
+				if (mod != vkCode.VK_SHIFT &&
+					mod != vkCode.VK_CONTROL &&
+					mod != vkCode.VK_MENU &&
+					mod != vkCode.VK_WIN &&
+					!usedMods.Contains(mod))
 				{
-					// I'm reconsidering the idea of having combined shift keys
-					if (mod != vkCode.VK_SHIFT &&
-						mod != vkCode.VK_CONTROL &&
-						mod != vkCode.VK_MENU &&
-						mod != vkCode.VK_WIN &&
-						!extraMods.Contains(mod))
-					{
-						extraMods.Add(mod);
-					}
+					// extraMods.Add(mod);
+					usedMods.Add(mod);
+					topLevelMachines.Add(new StateMachine(mod));
 				}
 			});
-			_extraMods = extraMods.ToArray();
+			// _extraMods = extraMods.ToArray();
 			Install();
 		}
 

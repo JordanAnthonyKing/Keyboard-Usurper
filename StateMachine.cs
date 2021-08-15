@@ -113,11 +113,13 @@ namespace Keyboard_Usurper
 		public State CurrentState { get; private set; }
 		public Action CurrentAction { get; private set; }
 
+		private Mapping _mapping;
+
 		private vkCode _activationKey;
 		private vkCode _savedKeyDown = vkCode.VK_NULL;
 		private readonly List<vkCode> _mappedKeysHeld = new List<vkCode>();
 
-		public StateMachine(vkCode activationKey)
+		public StateMachine(vkCode activationKey, Mapping mappings, IReadOnlyList<StateMachine> stateMachines)
 		{
 			_activationKey = activationKey;
 
@@ -192,7 +194,6 @@ namespace Keyboard_Usurper
 			CurrentState = endState.NewState;
 			CurrentAction = endState.Action;
 		}
-
 
 		private bool ProcessEvent(Event e, vkCode code)
 		{
