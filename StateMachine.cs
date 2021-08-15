@@ -51,8 +51,17 @@ namespace Keyboard_Usurper
 		Null
 	}
 
+	public class KeyCodeEvent : EventArgs
+	{
+		public vkCode code;
+		public bool up;
+	}
+
 	public class StateMachine
 	{
+		public event EventHandler SendInput;
+
+		protected virtual void OnSendInput(KeyCodeEvent e) => SendInput?.Invoke(this, e);
 
 		private class StartState
 		{
@@ -77,7 +86,7 @@ namespace Keyboard_Usurper
 			}
 		}
 
-		public class EndState
+		private class EndState
 		{
 			public readonly State NewState;
 			public readonly Action Action;
@@ -104,8 +113,14 @@ namespace Keyboard_Usurper
 		public State CurrentState { get; private set; }
 		public Action CurrentAction { get; private set; }
 
-		public StateMachine()
+		private vkCode _activationKey;
+		private vkCode _savedKeyDown = vkCode.VK_NULL;
+		private readonly List<vkCode> _mappedKeysHeld = new List<vkCode>();
+
+		public StateMachine(vkCode activationKey)
 		{
+			_activationKey = activationKey;
+
 			CurrentState = State.Idle;
 			transitions = new Dictionary<StartState, EndState>
 			{
@@ -162,7 +177,7 @@ namespace Keyboard_Usurper
 			};
 		}
 
-		public EndState GetNext(Event command)
+		private EndState GetNext(Event command)
 		{
 			StartState transition = new StartState(CurrentState, command);
 			EndState endState;
@@ -171,11 +186,238 @@ namespace Keyboard_Usurper
 			return endState;
 		}
 
-		public void MoveNext(Event command)
+		private void MoveNext(Event command)
 		{
 			EndState endState = GetNext(command);
 			CurrentState = endState.NewState;
 			CurrentAction = endState.Action;
 		}
+
+
+		private bool ProcessEvent(Event e, vkCode code)
+		{
+			if (GetNext(e).NewState != State.Self) MoveNext(e);
+
+			switch (CurrentAction)
+			{
+				case Action.DiscardKey:
+					return DiscardKey();
+				case Action.TapActivationKey:
+					return TapActivationKey(code);
+				case Action.DelayKeyDown:
+					return DelayKeyDown(code);
+				case Action.MapKeyUp:
+					return MapKeyUp(code);
+				case Action.MapKeyDown:
+					return MapKeyDown(code);
+				case Action.ActivationKeyDownThenKey:
+					return ActivationKeyDownThenKey(code);
+				case Action.EmitActDownSavedDownActUp:
+					return EmitActDownSavedDownActUp(code);
+				case Action.MapSavedAndMapCurrentDown:
+					return MapSavedAndMapCurrentDown(code);
+				case Action.MapSavedAndMapCurrentUp:
+					return MapSavedAndMapCurrentUp(code);
+				case Action.EmitActSavedAndCurrentDown:
+					return EmitActSavedAndCurrentDown(code);
+				case Action.EmitActSavedAndCurrentUp:
+					return EmitActSavedAndCurrentUp(code);
+				case Action.EmitSavedDownAndActUp:
+					return EmitSavedDownAndActUp(code);
+				case Action.EmitSavedAndCurrentDown:
+					return EmitSavedAndCurrentDown(code);
+				case Action.DiscardKeyAndReleaseMappedKeys:
+					return DiscardKeyAndReleaseMappedKeys(code);
+				case Action.RunConfigure:
+					// return RunConfigure();
+					break;
+				case Action.Null:
+					// Do nothing
+					break;
+			}
+
+			return false;
+		}
+
+		private bool MapKey(vkCode code, bool up)
+		{
+			vkCode newCode = TranslateCode(code);
+
+			if (newCode != vkCode.VK_NULL)
+			{
+				if (!up)
+				{
+					_mappedKeysHeld.Add(newCode);
+					KeyDown(newCode);
+				}	
+				else
+				{
+					// This may need a try block
+					_mappedKeysHeld.Remove(newCode);
+					KeyUp(newCode);
+				}
+				return true;
+			}
+			return false;
+		}
+
+		private bool DiscardKey() => true;
+
+		private bool DiscardKeyAndReleaseMappedKeys(vkCode code) 
+		{
+			_mappedKeysHeld.ForEach(k =>
+			{
+				_mappedKeysHeld.ForEach(k =>
+				{
+					OnSendInput(new KeyCodeEvent { code = k, up = false });
+				});
+				_mappedKeysHeld.Remove(k);
+				KeyUp(k);
+			});
+			return true;	
+		}
+
+		private bool TapActivationKey(vkCode code)
+		{
+			TapKey(_activationKey);
+			return true;
+		}
+
+		private bool ActivationKeyDownThenKey(vkCode code)
+		{
+			KeyDown(_activationKey);
+			KeyDown(code);
+			return true;
+		}
+
+		private bool MapKeyDown(vkCode code)
+		{
+			return MapKey(code, false);
+		}
+
+		private bool MapKeyUp(vkCode code)
+		{
+			return MapKey(code, false);
+		}
+
+		private bool DelayKeyDown(vkCode code)
+		{
+			// touchcursor has some assert logic here to make sure
+			// the program doesn't get stuck in a bad state
+			// but I think it will be unneeded here
+
+			_savedKeyDown = code;
+			return true;
+		}
+
+		private bool EmitSaved(vkCode code)
+		{
+			if (_savedKeyDown != vkCode.VK_NULL)
+			{
+				KeyDown(code);
+				_savedKeyDown = vkCode.VK_NULL;
+			}
+			return true;
+		}
+
+		private bool EmitActDownSavedDownActUp(vkCode code) 
+		{
+			KeyDown(_activationKey);
+			EmitSaved(code);
+			KeyUp(_activationKey);
+			return true;
+		}
+
+		private bool EmitSavedDownAndActUp(vkCode code) {
+			EmitSaved(code);
+			KeyUp(_activationKey);
+			return true;
+		}
+
+		private void MapSavedDown() 
+		{
+			if (_savedKeyDown != vkCode.VK_NULL)
+			{
+				MapKeyDown(_savedKeyDown);
+				_savedKeyDown = vkCode.VK_NULL;
+			}
+		}
+
+		private bool MapSavedAndMapCurrentDown(vkCode code) 
+		{
+			MapSavedDown();
+			MapKeyDown(code);
+			return true;
+		}
+
+		private bool MapSavedAndMapCurrentUp(vkCode code) {
+			MapSavedDown();
+			MapKeyUp(code);
+			return true;
+		}
+
+		private bool EmitActSavedAndCurrentDown(vkCode code) {
+			KeyDown(_activationKey);
+			EmitSaved(code);
+			KeyDown(code);
+			return true;
+		}
+
+		private bool EmitActSavedAndCurrentUp(vkCode code) {
+			KeyDown(_activationKey);
+			EmitSaved(code);
+			KeyUp(code);
+			return true;
+		}
+
+		private bool EmitSavedAndCurrentDown(vkCode code) {
+			EmitSaved(code);
+			KeyDown(code);
+			return true;
+		}
+
+		// TODO
+		private vkCode TranslateCode(vkCode code)
+		{
+			// This is where all the mapping is done
+
+			return vkCode.VK_NULL;
+		}
+
+		private void TapKey(vkCode code)
+		{
+			KeyDown(code);
+			KeyUp(code);
+		}
+
+		private void KeyDown(vkCode code)
+		{
+			KeyEvent(code, false);
+		}
+
+		private void KeyUp(vkCode code)
+		{
+			KeyEvent(code, true);
+		}
+
+		private void KeyEvent(vkCode code, bool up)
+		{
+			if (!up) // Only add modifiers on key down
+			{
+				_mappedKeysHeld.ForEach(k =>
+				{
+					OnSendInput(new KeyCodeEvent { code = k, up = false });
+				});
+			}
+			OnSendInput(new KeyCodeEvent { code = code, up = false });
+			if (!up)
+			{
+				_mappedKeysHeld.ForEach(k =>
+				{
+					OnSendInput(new KeyCodeEvent { code = k, up = false });
+				});
+			}
+		}
+
 	}
 }

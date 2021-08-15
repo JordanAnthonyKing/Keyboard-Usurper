@@ -25,11 +25,7 @@ namespace Keyboard_Usurper
 		private List<vkCode> _expectedInputs = new();
 
 		// TODO: Rewrite this for arbitrary keys
-		private vkCode _activationKey = vkCode.VK_SPACE;
-		private vkCode _savedKeyDown = vkCode.VK_NULL;
-
 		private readonly StateMachine _stateMachine = new StateMachine();
-		private readonly List<vkCode> _mappedKeysHeld = new List<vkCode>();
 
 		public KeyboardHook(Mapping mapping)
 		{
@@ -76,9 +72,12 @@ namespace Keyboard_Usurper
 			// I don't know if we should do this with async checks or by the same as _mappedKeys
 
 
+			// TODO: This needs writing to use some sort of list that contains state machine starters
+			// And the logic needs (mostly) moving into the statemachines themselves
 			Event e = Event.NumEvents;
 
-			if (_extraMods.Contains(code))
+			// if (_extraMods.Contains(code))
+			if (code == _activationKey)
 			{
 				e = IsKeyDown(wParam) ? Event.ActivationDown : Event.ActivationUp;
 			}
@@ -95,51 +94,6 @@ namespace Keyboard_Usurper
 			return ProcessEvent(e, code);
 		}
 
-		private bool ProcessEvent(Event e, vkCode code)
-		{
-			if (_stateMachine.GetNext(e).NewState != State.Self)	
-				_stateMachine.MoveNext(e);
-
-			switch (_stateMachine.CurrentAction)
-			{
-				case Action.DiscardKey:
-					return DiscardKey();
-				case Action.TapActivationKey:
-					return TapActivationKey(code);
-				case Action.DelayKeyDown:
-					return DelayKeyDown(code);
-				case Action.MapKeyUp:
-					return MapKeyUp(code);
-				case Action.MapKeyDown:
-					return MapKeyDown(code);
-				case Action.ActivationKeyDownThenKey:
-					return ActivationKeyDownThenKey(code);
-				case Action.EmitActDownSavedDownActUp:
-					return EmitActDownSavedDownActUp(code);
-				case Action.MapSavedAndMapCurrentDown:
-					return MapSavedAndMapCurrentDown(code);
-				case Action.MapSavedAndMapCurrentUp:
-					return MapSavedAndMapCurrentUp(code);
-				case Action.EmitActSavedAndCurrentDown:
-					return EmitActSavedAndCurrentDown(code);
-				case Action.EmitActSavedAndCurrentUp:
-					return EmitActSavedAndCurrentUp(code);
-				case Action.EmitSavedDownAndActUp:
-					return EmitSavedDownAndActUp(code);
-				case Action.EmitSavedAndCurrentDown:
-					return EmitSavedAndCurrentDown(code);
-				case Action.DiscardKeyAndReleaseMappedKeys:
-					return DiscardKeyAndReleaseMappedKeys(code);
-				case Action.RunConfigure:
-					// return RunConfigure();
-					break;
-				case Action.Null:
-					// Do nothing
-					break;
-			}
-
-			return false;
-		}
 
 		// TODO: Remove or change this
 		private void SendInput(vkCode code, bool up = false)
@@ -159,185 +113,6 @@ namespace Keyboard_Usurper
 				(nuint)wParam == Constants.WM_SYSKEYDOWN;
 		}
 
-		private bool MapKey(vkCode code, bool up)
-		{
-			vkCode newCode = TranslateCode(code);
-
-			if (newCode != vkCode.VK_NULL)
-			{
-				if (!up)
-				{
-					_mappedKeysHeld.Add(newCode);
-				}	
-				else
-				{
-					// This may need a try block
-					_mappedKeysHeld.Remove(newCode);
-				}
-				
-				KeyEvent(newCode, up);
-				return true;
-			}
-			return false;
-		}
-
-		private bool DiscardKey() => true;
-
-		private bool DiscardKeyAndReleaseMappedKeys(vkCode code) 
-		{
-			_mappedKeysHeld.ForEach(k =>
-			{
-				_mappedKeysHeld.ForEach(k =>
-				{
-					SendInput(k, false);
-				});
-				_mappedKeysHeld.Remove(k);
-				KeyEvent(k, true);
-			});
-			return true;	
-		}
-
-		private bool TapActivationKey(vkCode code)
-		{
-			TapKey(_activationKey);
-			return true;
-		}
-
-		private bool ActivationKeyDownThenKey(vkCode code)
-		{
-			KeyDown(_activationKey);
-			KeyDown(code);
-			return true;
-		}
-
-		private bool MapKeyDown(vkCode code)
-		{
-			return MapKey(code, false);
-		}
-
-		private bool MapKeyUp(vkCode code)
-		{
-			return MapKey(code, false);
-		}
-
-		private bool DelayKeyDown(vkCode code)
-		{
-			// touchcursor has some assert logic here to make sure
-			// the program doesn't get stuck in a bad state
-			// but I think it will be unneeded here
-
-			_savedKeyDown = code;
-			return true;
-		}
-
-		private bool EmitSaved(vkCode code)
-		{
-			if (_savedKeyDown != vkCode.VK_NULL)
-			{
-				KeyDown(code);
-				_savedKeyDown = vkCode.VK_NULL;
-			}
-			return true;
-		}
-
-		private bool EmitActDownSavedDownActUp(vkCode code) 
-		{
-			KeyDown(_activationKey);
-			EmitSaved(code);
-			KeyUp(_activationKey);
-			return true;
-		}
-
-		private bool EmitSavedDownAndActUp(vkCode code) {
-			EmitSaved(code);
-			KeyUp(_activationKey);
-			return true;
-		}
-
-		private void MapSavedDown() 
-		{
-			if (_savedKeyDown != vkCode.VK_NULL)
-			{
-				MapKeyDown(_savedKeyDown);
-				_savedKeyDown = vkCode.VK_NULL;
-			}
-		}
-
-		private bool MapSavedAndMapCurrentDown(vkCode code) 
-		{
-			MapSavedDown();
-			MapKeyDown(code);
-			return true;
-		}
-
-		private bool MapSavedAndMapCurrentUp(vkCode code) {
-			MapSavedDown();
-			MapKeyUp(code);
-			return true;
-		}
-
-		private bool EmitActSavedAndCurrentDown(vkCode code) {
-			KeyDown(_activationKey);
-			EmitSaved(code);
-			KeyDown(code);
-			return true;
-		}
-
-		private bool EmitActSavedAndCurrentUp(vkCode code) {
-			KeyDown(_activationKey);
-			EmitSaved(code);
-			KeyUp(code);
-			return true;
-		}
-
-		private bool EmitSavedAndCurrentDown(vkCode code) {
-			EmitSaved(code);
-			KeyDown(code);
-			return true;
-		}
-
-		private void TapKey(vkCode code)
-		{
-			KeyDown(code);
-			KeyUp(code);
-		}
-
-		private void KeyDown(vkCode code)
-		{
-			KeyEvent(code, false);
-		}
-
-		private void KeyUp(vkCode code)
-		{
-			KeyEvent(code, true);
-		}
-
-		private void KeyEvent(vkCode code, bool up)
-		{
-			if (!up) // Only add modifiers on key down
-			{
-				_mappedKeysHeld.ForEach(k =>
-				{
-					SendInput(k, false);
-				});
-			}
-			SendInput(code, up);
-			if (!up)
-			{
-				_mappedKeysHeld.ForEach(k =>
-				{
-					SendInput(k, false);
-				});
-			}
-		}
-
-		// TODO
-		private vkCode TranslateCode(vkCode code)
-		{
-			// This is where all the mapping is done
-
-			return vkCode.VK_NULL;
-		}
 
 		private void Install()
 		{

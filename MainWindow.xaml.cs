@@ -15,7 +15,6 @@ using System.Windows.Shapes;
 using System.Runtime.InteropServices;
 using Microsoft.Windows.Sdk;
 using System.Windows.Threading;
-using Keyboard_Usurper.Handles;
 
 namespace Keyboard_Usurper
 {
