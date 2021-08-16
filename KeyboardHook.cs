@@ -21,15 +21,11 @@ namespace Keyboard_Usurper
 			vkCode.VK_LMENU,
 			vkCode.VK_RMENU
 		};
-		// Don't think I need this anymore
-		// private vkCode[] _extraMods;
 		private List<vkCode> _expectedInputs = new();
 
-		// TODO: Rewrite this for arbitrary keys
-		// private readonly StateMachine _stateMachine = new StateMachine();
+		private readonly List<StateMachine> _stateMachines = new List<StateMachine>();
 
-		private readonly List<StateMachine> topLevelMachines = new List<StateMachine>();
-
+		// This logic should really be moved out of the Keyboard hook
 		public KeyboardHook(Mapping mapping)
 		{
 			_mapping = mapping;
@@ -37,23 +33,20 @@ namespace Keyboard_Usurper
 
 			List<vkCode> usedMods = new List<vkCode>();
 
-			// TODO: Recurse over this
 			List<vkCode> extraMods = new();
 			_mapping.Mappings.ForEach(x =>
 			{
-				vkCode mod = x.From.Mods.FirstOrDefault();
-				if (mod != vkCode.VK_SHIFT &&
-					mod != vkCode.VK_CONTROL &&
-					mod != vkCode.VK_MENU &&
-					mod != vkCode.VK_WIN &&
-					!usedMods.Contains(mod))
+				vkCode activationKey = x.From.ActivationKey;
+				if (activationKey != vkCode.VK_NULL && !usedMods.Contains(activationKey))
 				{
-					// extraMods.Add(mod);
-					usedMods.Add(mod);
-					topLevelMachines.Add(new StateMachine(mod));
+					usedMods.Add(activationKey);
+					_stateMachines.Add(new StateMachine(
+					  activationKey, 
+					  new Mapping { Mappings = _mapping.Mappings.Where(x => x.From.ActivationKey == activationKey).ToList() }
+					));
 				}
 			});
-			// _extraMods = extraMods.ToArray();
+
 			Install();
 		}
 
@@ -81,7 +74,7 @@ namespace Keyboard_Usurper
 			// And the logic needs (mostly) moving into the statemachines themselves
 			Event e = Event.NumEvents;
 
-			// if (_extraMods.Contains(code))
+			// I think really this code needs to go into the statemachine
 			if (code == _activationKey)
 			{
 				e = IsKeyDown(wParam) ? Event.ActivationDown : Event.ActivationUp;
@@ -108,6 +101,7 @@ namespace Keyboard_Usurper
 			inputs[0].Anonymous.ki.wVk = (ushort)code;
 			if (up) inputs[0].Anonymous.ki.dwFlags = keybd_eventFlags.KEYEVENTF_KEYUP;
 
+			// TODO: Double check if this is needed
 			_expectedInputs.Add(code);
 			PInvoke.SendInput(new Span<INPUT>(inputs), Marshal.SizeOf<INPUT>());
 		}

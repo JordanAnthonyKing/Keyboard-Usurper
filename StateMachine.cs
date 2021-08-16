@@ -113,20 +113,20 @@ namespace Keyboard_Usurper
 		public State CurrentState { get; private set; }
 		public Action CurrentAction { get; private set; }
 
-		private Mapping _mapping;
+		private Mapping _mappings;
 
 		private vkCode _activationKey;
 		private vkCode _savedKeyDown = vkCode.VK_NULL;
 		private readonly List<vkCode> _mappedKeysHeld = new List<vkCode>();
 
-		public StateMachine(vkCode activationKey, Mapping mappings, IReadOnlyList<StateMachine> stateMachines)
+		public StateMachine(vkCode activationKey, Mapping mappings)
 		{
 			_activationKey = activationKey;
+			_mappings = mappings;
 
 			CurrentState = State.Idle;
 			transitions = new Dictionary<StartState, EndState>
 			{
-				// TODO: Something may need doing in here to have multiple activation keys
 				// Idle
 				{ new StartState(State.Idle, Event.ActivationDown), new EndState(State.WaitMappedDown, Action.DiscardKey) },
 				{ new StartState(State.Idle, Event.ActivationUp),   new EndState(State.Self, Action.Null) },
@@ -381,6 +381,11 @@ namespace Keyboard_Usurper
 		private vkCode TranslateCode(vkCode code)
 		{
 			// This is where all the mapping is done
+			// Something like
+			// Find matching code
+			// Check sets of modifier keys
+			// Find complete match
+			// Return mapped code
 
 			return vkCode.VK_NULL;
 		}

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Keyboard_Usurper
 {
-	// TODO: Probably rename this to Mappings
+	// TODO: Probably rename this to Mappings or actually maybe better off as Binding
 	public class Mapping
 	{
 		public List<KeyToKey> Mappings = new();
@@ -21,6 +21,7 @@ namespace Keyboard_Usurper
 	public class Key
 	{
 		public vkCode[] Mods;
+		public vkCode ActivationKey;
 		public vkCode Code;
 	}
 
@@ -29,6 +30,16 @@ namespace Keyboard_Usurper
 		public static Mapping Convert(Configuration config)
 		{
 			Mapping mapping = new();
+			vkCode[] mods = new vkCode[]{ 
+				vkCode.VK_LSHIFT,
+				vkCode.VK_RSHIFT,
+				vkCode.VK_LWIN,
+				vkCode.VK_RWIN,
+				vkCode.VK_LCONTROL,
+				vkCode.VK_RCONTROL,
+				vkCode.VK_LMENU,
+				vkCode.VK_RMENU
+			};
 
 			// TODO: Handle ---
 			foreach(ConfigBinding binding in config.bindings)
@@ -40,7 +51,17 @@ namespace Keyboard_Usurper
 				{
 					From = new Key
 					{
-						Mods = fromKeys.Take(fromKeys.Length - 1).Select(x => StringToCode.ConvertTo(x)).ToArray(),
+						Mods = fromKeys
+						  .Take(fromKeys.Length - 1)
+						  .Select(x => StringToCode.ConvertTo(x))
+						  .Where(x => mods.Contains(x))
+						  .ToArray(),
+						// TODO: A better way to do this?
+						ActivationKey = fromKeys
+						  .Take(fromKeys.Length - 1)
+						  .Select(x => StringToCode.ConvertTo(x))
+						  .Where(x => mods.Contains(x))
+						  .FirstOrDefault(),
 						Code = StringToCode.ConvertTo(fromKeys.Last())
 					},
 					To = new Key
