@@ -10,7 +10,7 @@ namespace Keyboard_Usurper
 	{
 		private UnhookWindowsHookExSafeHandle _hookHandle = null;
 		private HOOKPROC _hookProc;
-		private Mapping _mapping;
+		private List<KeyToKey> _mappings;
 		private vkCode[] _mods = new vkCode[]{ 
 			vkCode.VK_LSHIFT,
 			vkCode.VK_RSHIFT,
@@ -25,16 +25,16 @@ namespace Keyboard_Usurper
 
 		private readonly List<StateMachine> _stateMachines = new List<StateMachine>();
 
-		// This logic should really be moved out of the Keyboard hook
-		public KeyboardHook(Mapping mapping)
+		// This logic should really be moved out of the Keyboard hook into a setup thing
+		public KeyboardHook(List<KeyToKey> mappings)
 		{
-			_mapping = mapping;
+			_mappings = mappings;
 			_hookProc =  new HOOKPROC(HookCallBack);
 
 			List<vkCode> usedMods = new List<vkCode>();
 
 			List<vkCode> extraMods = new();
-			_mapping.Mappings.ForEach(x =>
+			_mappings.ForEach(x =>
 			{
 				vkCode activationKey = x.From.ActivationKey;
 				if (activationKey != vkCode.VK_NULL && !usedMods.Contains(activationKey))
@@ -42,7 +42,7 @@ namespace Keyboard_Usurper
 					usedMods.Add(activationKey);
 					_stateMachines.Add(new StateMachine(
 					  activationKey, 
-					  new Mapping { Mappings = _mapping.Mappings.Where(x => x.From.ActivationKey == activationKey).ToList() }
+					  _mappings.Where(x => x.From.ActivationKey == activationKey).ToList() }
 					));
 				}
 			});
@@ -72,24 +72,13 @@ namespace Keyboard_Usurper
 
 			// TODO: This needs writing to use some sort of list that contains state machine starters
 			// And the logic needs (mostly) moving into the statemachines themselves
-			Event e = Event.NumEvents;
 
-			// I think really this code needs to go into the statemachine
-			if (code == _activationKey)
-			{
-				e = IsKeyDown(wParam) ? Event.ActivationDown : Event.ActivationUp;
-			}
-			// else if (_mapping.Mappings.Exists(x => x.To.Code == code)) 
-			else if (TranslateCode(code) != vkCode.VK_NULL) 
-			{
-				e = IsKeyDown(wParam) ? Event.MappedKeyDown : Event.MappedKeyUp;
-			}
-			else
-			{
-				e = IsKeyDown(wParam) ? Event.OtherKeyDown : Event.OtherKeyUp;
-			}
-			// State machine
-			return ProcessEvent(e, code);
+
+			// 1. Do we have an active state machine?
+			// 2. Is this key an activation key for one of our state machines?
+
+			// return ProcessEvent(e, code);
+			return true;
 		}
 
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Windows.Sdk;
+using System.Runtime.InteropServices;
 
 namespace Keyboard_Usurper
 {
@@ -113,13 +115,13 @@ namespace Keyboard_Usurper
 		public State CurrentState { get; private set; }
 		public Action CurrentAction { get; private set; }
 
-		private Mapping _mappings;
+		private List<KeyToKey> _mappings;
 
 		private vkCode _activationKey;
 		private vkCode _savedKeyDown = vkCode.VK_NULL;
 		private readonly List<vkCode> _mappedKeysHeld = new List<vkCode>();
 
-		public StateMachine(vkCode activationKey, Mapping mappings)
+		public StateMachine(vkCode activationKey, List<KeyToKey> mappings)
 		{
 			_activationKey = activationKey;
 			_mappings = mappings;
@@ -195,6 +197,26 @@ namespace Keyboard_Usurper
 			CurrentAction = endState.Action;
 		}
 
+		public bool ProcessKey(bool isKeyDown, vkCode code)
+		{
+			Event e;
+
+			if (code == _activationKey)
+			{
+				e = isKeyDown ? Event.ActivationDown : Event.ActivationUp;
+			}
+			else if (TranslateCode(code) != vkCode.VK_NULL)
+			{
+				e = isKeyDown ? Event.MappedKeyDown : Event.MappedKeyUp;
+			}
+			else
+			{
+				e = isKeyDown ? Event.OtherKeyDown : Event.OtherKeyUp;
+			}
+
+			return ProcessEvent(e, code);
+		}
+
 		private bool ProcessEvent(Event e, vkCode code)
 		{
 			if (GetNext(e).NewState != State.Self) MoveNext(e);
@@ -250,7 +272,7 @@ namespace Keyboard_Usurper
 				{
 					_mappedKeysHeld.Add(newCode);
 					KeyDown(newCode);
-				}	
+				}
 				else
 				{
 					// This may need a try block
@@ -264,7 +286,7 @@ namespace Keyboard_Usurper
 
 		private bool DiscardKey() => true;
 
-		private bool DiscardKeyAndReleaseMappedKeys(vkCode code) 
+		private bool DiscardKeyAndReleaseMappedKeys(vkCode code)
 		{
 			_mappedKeysHeld.ForEach(k =>
 			{
@@ -275,7 +297,7 @@ namespace Keyboard_Usurper
 				_mappedKeysHeld.Remove(k);
 				KeyUp(k);
 			});
-			return true;	
+			return true;
 		}
 
 		private bool TapActivationKey(vkCode code)
@@ -321,7 +343,7 @@ namespace Keyboard_Usurper
 			return true;
 		}
 
-		private bool EmitActDownSavedDownActUp(vkCode code) 
+		private bool EmitActDownSavedDownActUp(vkCode code)
 		{
 			KeyDown(_activationKey);
 			EmitSaved(code);
@@ -329,13 +351,14 @@ namespace Keyboard_Usurper
 			return true;
 		}
 
-		private bool EmitSavedDownAndActUp(vkCode code) {
+		private bool EmitSavedDownAndActUp(vkCode code)
+		{
 			EmitSaved(code);
 			KeyUp(_activationKey);
 			return true;
 		}
 
-		private void MapSavedDown() 
+		private void MapSavedDown()
 		{
 			if (_savedKeyDown != vkCode.VK_NULL)
 			{
@@ -344,48 +367,71 @@ namespace Keyboard_Usurper
 			}
 		}
 
-		private bool MapSavedAndMapCurrentDown(vkCode code) 
+		private bool MapSavedAndMapCurrentDown(vkCode code)
 		{
 			MapSavedDown();
 			MapKeyDown(code);
 			return true;
 		}
 
-		private bool MapSavedAndMapCurrentUp(vkCode code) {
+		private bool MapSavedAndMapCurrentUp(vkCode code)
+		{
 			MapSavedDown();
 			MapKeyUp(code);
 			return true;
 		}
 
-		private bool EmitActSavedAndCurrentDown(vkCode code) {
+		private bool EmitActSavedAndCurrentDown(vkCode code)
+		{
 			KeyDown(_activationKey);
 			EmitSaved(code);
 			KeyDown(code);
 			return true;
 		}
 
-		private bool EmitActSavedAndCurrentUp(vkCode code) {
+		private bool EmitActSavedAndCurrentUp(vkCode code)
+		{
 			KeyDown(_activationKey);
 			EmitSaved(code);
 			KeyUp(code);
 			return true;
 		}
 
-		private bool EmitSavedAndCurrentDown(vkCode code) {
+		private bool EmitSavedAndCurrentDown(vkCode code)
+		{
 			EmitSaved(code);
 			KeyDown(code);
 			return true;
 		}
 
-		// TODO
 		private vkCode TranslateCode(vkCode code)
 		{
+			// TODO
 			// This is where all the mapping is done
 			// Something like
 			// Find matching code
 			// Check sets of modifier keys
 			// Find complete match
 			// Return mapped code
+
+			// TODO: Separate L and R controls
+			bool shift = (PInvoke.GetAsyncKeyState((int)vkCode.VK_CONTROL) & 0xFF00) != 0;
+			bool ctrl = (PInvoke.GetAsyncKeyState((int)vkCode.VK_CONTROL) & 0xFF00) != 0;
+			bool alt = (PInvoke.GetAsyncKeyState((int)vkCode.VK_MENU) & 0xFF00) != 0;
+			bool win = (PInvoke.GetAsyncKeyState((int)vkCode.VK_LWIN) & 0xFF00) != 0 ||
+				       (PInvoke.GetAsyncKeyState((int)vkCode.VK_RWIN) & 0xFF00) != 0;
+
+			// TODO: Don't first or default this and filter it by the switch logic
+			KeyToKey map = _mappings.Where(x => x.From.Code == code).FirstOrDefault();
+			if (map == null) { return vkCode.VK_NULL; }
+
+			foreach (vkCode vk in map.From.Mods)
+			{
+				switch (vk)
+				{
+					// 
+				}
+			} 
 
 			return vkCode.VK_NULL;
 		}

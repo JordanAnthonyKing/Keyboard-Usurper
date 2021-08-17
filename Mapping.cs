@@ -6,12 +6,6 @@ using System.Threading.Tasks;
 
 namespace Keyboard_Usurper
 {
-	// TODO: Probably rename this to Mappings or actually maybe better off as Binding
-	public class Mapping
-	{
-		public List<KeyToKey> Mappings = new();
-	}
-
 	public class KeyToKey
 	{
 		public Key From;
@@ -27,9 +21,10 @@ namespace Keyboard_Usurper
 
 	public static class ConfigurationToMapping
 	{
-		public static Mapping Convert(Configuration config)
+		// TODO: Make this an array?
+		public static List<KeyToKey> Convert(Configuration config)
 		{
-			Mapping mapping = new();
+			List<KeyToKey> mappings = new();
 			vkCode[] mods = new vkCode[]{ 
 				vkCode.VK_LSHIFT,
 				vkCode.VK_RSHIFT,
@@ -71,10 +66,10 @@ namespace Keyboard_Usurper
 					}
 				};
 
-				mapping.Mappings.Add(k2k);
+				mappings.Add(k2k);
 			}
 
-			return mapping;
+			return mappings;
 		}
 	}
 }
