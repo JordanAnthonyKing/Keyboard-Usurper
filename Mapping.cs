@@ -55,7 +55,7 @@ namespace Keyboard_Usurper
 						ActivationKey = fromKeys
 						  .Take(fromKeys.Length - 1)
 						  .Select(x => StringToCode.ConvertTo(x))
-						  .Where(x => mods.Contains(x))
+						  .Where(x => !mods.Contains(x))
 						  .FirstOrDefault(),
 						Code = StringToCode.ConvertTo(fromKeys.Last())
 					},

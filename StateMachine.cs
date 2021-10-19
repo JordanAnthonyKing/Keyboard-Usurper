@@ -61,9 +61,11 @@ namespace Keyboard_Usurper
 
 	public class StateMachine
 	{
-		public event EventHandler SendInput;
+        public event EventHandler<KeyCodeEvent> SendInput;
+        public event EventHandler Deactivate;
 
 		protected virtual void OnSendInput(KeyCodeEvent e) => SendInput?.Invoke(this, e);
+		protected virtual void OnDeactivate() => Deactivate?.Invoke(this, new EventArgs());
 
 		private class StartState
 		{
@@ -117,16 +119,17 @@ namespace Keyboard_Usurper
 
 		private List<KeyToKey> _mappings;
 
-		private vkCode _activationKey;
+		public vkCode ActivationKey;
 		private vkCode _savedKeyDown = vkCode.VK_NULL;
 		private readonly List<vkCode> _mappedKeysHeld = new List<vkCode>();
 
 		public StateMachine(vkCode activationKey, List<KeyToKey> mappings)
 		{
-			_activationKey = activationKey;
+			ActivationKey = activationKey;
 			_mappings = mappings;
 
 			CurrentState = State.Idle;
+			CurrentAction = Action.Null;
 			transitions = new Dictionary<StartState, EndState>
 			{
 				// Idle
@@ -173,9 +176,9 @@ namespace Keyboard_Usurper
 				// Mapping (definitely eaten the activation key)
 				{ new StartState(State.Mapping, Event.ActivationDown), new EndState(State.Self, Action.DiscardKey) },
 				{ new StartState(State.Mapping, Event.ActivationUp),   new EndState(State.Idle, Action.DiscardKeyAndReleaseMappedKeys) },
-				{ new StartState(State.Mapping, Event.MappedKeyDown),  new EndState(State.Mapping, Action.MapKeyDown) },
-				{ new StartState(State.Mapping, Event.MappedKeyUp),    new EndState(State.Mapping, Action.MapKeyUp) },
-				{ new StartState(State.Mapping, Event.OtherKeyDown),   new EndState(State.Idle, Action.Null) },
+				{ new StartState(State.Mapping, Event.MappedKeyDown),  new EndState(State.Self, Action.MapKeyDown) },
+				{ new StartState(State.Mapping, Event.MappedKeyUp),    new EndState(State.Self, Action.MapKeyUp) },
+				{ new StartState(State.Mapping, Event.OtherKeyDown),   new EndState(State.Self, Action.Null) },
 				{ new StartState(State.Mapping, Event.OtherKeyUp),     new EndState(State.Self, Action.Null) },
 				{ new StartState(State.Mapping, Event.ConfigKeyDown),  new EndState(State.Self, Action.RunConfigure) },
 			};
@@ -193,7 +196,11 @@ namespace Keyboard_Usurper
 		private void MoveNext(Event command)
 		{
 			EndState endState = GetNext(command);
-			CurrentState = endState.NewState;
+			System.Diagnostics.Debug.WriteLine(endState.NewState);
+			if (endState.NewState != State.Self)
+            {
+				CurrentState = endState.NewState;
+            }
 			CurrentAction = endState.Action;
 		}
 
@@ -201,16 +208,19 @@ namespace Keyboard_Usurper
 		{
 			Event e;
 
-			if (code == _activationKey)
+			if (code == ActivationKey)
 			{
+				System.Diagnostics.Debug.WriteLine("activation key");
 				e = isKeyDown ? Event.ActivationDown : Event.ActivationUp;
 			}
 			else if (TranslateCode(code) != vkCode.VK_NULL)
 			{
+				System.Diagnostics.Debug.WriteLine("mapped key");
 				e = isKeyDown ? Event.MappedKeyDown : Event.MappedKeyUp;
 			}
 			else
 			{
+				System.Diagnostics.Debug.WriteLine("other key");
 				e = isKeyDown ? Event.OtherKeyDown : Event.OtherKeyUp;
 			}
 
@@ -219,7 +229,13 @@ namespace Keyboard_Usurper
 
 		private bool ProcessEvent(Event e, vkCode code)
 		{
-			if (GetNext(e).NewState != State.Self) MoveNext(e);
+			// if (GetNext(e).NewState != State.Self) MoveNext(e);
+			MoveNext(e);
+			if (CurrentState == State.Idle)
+            {
+				System.Diagnostics.Debug.WriteLine("Deactivated");
+				OnDeactivate();
+            }
 
 			switch (CurrentAction)
 			{
@@ -264,21 +280,13 @@ namespace Keyboard_Usurper
 
 		private bool MapKey(vkCode code, bool up)
 		{
+			System.Diagnostics.Debug.WriteLine("MapKey");
 			vkCode newCode = TranslateCode(code);
 
 			if (newCode != vkCode.VK_NULL)
 			{
-				if (!up)
-				{
-					_mappedKeysHeld.Add(newCode);
-					KeyDown(newCode);
-				}
-				else
-				{
-					// This may need a try block
-					_mappedKeysHeld.Remove(newCode);
-					KeyUp(newCode);
-				}
+				if (!up) _mappedKeysHeld.Add(code);
+				KeyEvent(newCode, up);
 				return true;
 			}
 			return false;
@@ -288,43 +296,45 @@ namespace Keyboard_Usurper
 
 		private bool DiscardKeyAndReleaseMappedKeys(vkCode code)
 		{
+			System.Diagnostics.Debug.WriteLine("DiscardKeyAndReleaseMappedKeys");
 			_mappedKeysHeld.ForEach(k =>
 			{
-				_mappedKeysHeld.ForEach(k =>
-				{
-					OnSendInput(new KeyCodeEvent { code = k, up = false });
-				});
-				_mappedKeysHeld.Remove(k);
-				KeyUp(k);
+				KeyEvent(code, true);
 			});
+			_mappedKeysHeld.Clear();
 			return true;
 		}
 
 		private bool TapActivationKey(vkCode code)
 		{
-			TapKey(_activationKey);
+			System.Diagnostics.Debug.WriteLine("TapActivationKey");
+			TapKey(ActivationKey);
 			return true;
 		}
 
 		private bool ActivationKeyDownThenKey(vkCode code)
 		{
-			KeyDown(_activationKey);
+			System.Diagnostics.Debug.WriteLine("ActivationKeyDownThenKey");
+			KeyDown(ActivationKey);
 			KeyDown(code);
 			return true;
 		}
 
 		private bool MapKeyDown(vkCode code)
 		{
+			System.Diagnostics.Debug.WriteLine("MapKeyDown");
 			return MapKey(code, false);
 		}
 
 		private bool MapKeyUp(vkCode code)
 		{
-			return MapKey(code, false);
+			System.Diagnostics.Debug.WriteLine("MapKeyUp");
+			return MapKey(code, true);
 		}
 
 		private bool DelayKeyDown(vkCode code)
 		{
+			System.Diagnostics.Debug.WriteLine("DelayKeyDown");
 			// touchcursor has some assert logic here to make sure
 			// the program doesn't get stuck in a bad state
 			// but I think it will be unneeded here
@@ -333,11 +343,12 @@ namespace Keyboard_Usurper
 			return true;
 		}
 
-		private bool EmitSaved(vkCode code)
+		private bool EmitSaved()
 		{
+			System.Diagnostics.Debug.WriteLine("EmitSaved");
 			if (_savedKeyDown != vkCode.VK_NULL)
 			{
-				KeyDown(code);
+				KeyDown(_savedKeyDown);
 				_savedKeyDown = vkCode.VK_NULL;
 			}
 			return true;
@@ -345,21 +356,24 @@ namespace Keyboard_Usurper
 
 		private bool EmitActDownSavedDownActUp(vkCode code)
 		{
-			KeyDown(_activationKey);
-			EmitSaved(code);
-			KeyUp(_activationKey);
+			System.Diagnostics.Debug.WriteLine("EmitActDownSavedDownActUp");
+			KeyDown(ActivationKey);
+			EmitSaved();
+			KeyUp(ActivationKey);
 			return true;
 		}
 
 		private bool EmitSavedDownAndActUp(vkCode code)
 		{
-			EmitSaved(code);
-			KeyUp(_activationKey);
+			System.Diagnostics.Debug.WriteLine("EmitSavedDownAndActUp");
+			EmitSaved();
+			KeyUp(ActivationKey);
 			return true;
 		}
 
 		private void MapSavedDown()
 		{
+			System.Diagnostics.Debug.WriteLine("MapSavedDown");
 			if (_savedKeyDown != vkCode.VK_NULL)
 			{
 				MapKeyDown(_savedKeyDown);
@@ -369,6 +383,7 @@ namespace Keyboard_Usurper
 
 		private bool MapSavedAndMapCurrentDown(vkCode code)
 		{
+			System.Diagnostics.Debug.WriteLine("MapSavedAndMapCurrentDown");
 			MapSavedDown();
 			MapKeyDown(code);
 			return true;
@@ -376,6 +391,7 @@ namespace Keyboard_Usurper
 
 		private bool MapSavedAndMapCurrentUp(vkCode code)
 		{
+			System.Diagnostics.Debug.WriteLine("MapSavedAndMapCurrentUp");
 			MapSavedDown();
 			MapKeyUp(code);
 			return true;
@@ -383,57 +399,50 @@ namespace Keyboard_Usurper
 
 		private bool EmitActSavedAndCurrentDown(vkCode code)
 		{
-			KeyDown(_activationKey);
-			EmitSaved(code);
+			System.Diagnostics.Debug.WriteLine("EmitActSavedAndCurrentDown");
+			KeyDown(ActivationKey);
+			EmitSaved();
 			KeyDown(code);
 			return true;
 		}
 
 		private bool EmitActSavedAndCurrentUp(vkCode code)
 		{
-			KeyDown(_activationKey);
-			EmitSaved(code);
+			System.Diagnostics.Debug.WriteLine("EmitActSavedAndCurrentUp");
+			KeyDown(ActivationKey);
+			EmitSaved();
 			KeyUp(code);
 			return true;
 		}
 
 		private bool EmitSavedAndCurrentDown(vkCode code)
 		{
-			EmitSaved(code);
+			System.Diagnostics.Debug.WriteLine("EmitSavedAndCurrentDown");
+			EmitSaved();
 			KeyDown(code);
 			return true;
 		}
 
 		private vkCode TranslateCode(vkCode code)
 		{
-			// TODO
-			// This is where all the mapping is done
-			// Something like
-			// Find matching code
-			// Check sets of modifier keys
-			// Find complete match
-			// Return mapped code
-
-			// TODO: Separate L and R controls
+			// TODO: Separate L and R mods
+			// TODO: Keys that allow extra mods or not
 			bool shift = (PInvoke.GetAsyncKeyState((int)vkCode.VK_CONTROL) & 0xFF00) != 0;
 			bool ctrl = (PInvoke.GetAsyncKeyState((int)vkCode.VK_CONTROL) & 0xFF00) != 0;
 			bool alt = (PInvoke.GetAsyncKeyState((int)vkCode.VK_MENU) & 0xFF00) != 0;
 			bool win = (PInvoke.GetAsyncKeyState((int)vkCode.VK_LWIN) & 0xFF00) != 0 ||
 				       (PInvoke.GetAsyncKeyState((int)vkCode.VK_RWIN) & 0xFF00) != 0;
 
-			// TODO: Don't first or default this and filter it by the switch logic
-			KeyToKey map = _mappings.Where(x => x.From.Code == code).FirstOrDefault();
-			if (map == null) { return vkCode.VK_NULL; }
+			KeyToKey map = _mappings.Where(x => x.From.Code == code)
+				.Where(x =>
+                    x.From.Mods.Contains(vkCode.VK_SHIFT) == shift &&
+                    x.From.Mods.Contains(vkCode.VK_CONTROL) == ctrl &&
+                    x.From.Mods.Contains(vkCode.VK_MENU) == alt &&
+                    x.From.Mods.Contains(vkCode.VK_WIN) == win
+                ).FirstOrDefault();
 
-			foreach (vkCode vk in map.From.Mods)
-			{
-				switch (vk)
-				{
-					// 
-				}
-			} 
-
-			return vkCode.VK_NULL;
+			if (map == null) return vkCode.VK_NULL;
+			return map.To.Code;
 		}
 
 		private void TapKey(vkCode code)
@@ -456,18 +465,20 @@ namespace Keyboard_Usurper
 		{
 			if (!up) // Only add modifiers on key down
 			{
-				_mappedKeysHeld.ForEach(k =>
-				{
-					OnSendInput(new KeyCodeEvent { code = k, up = false });
-				});
+				// This is supposed to be mods not mapped keys
+ 				// _mappedKeysHeld.ForEach(k =>
+				// {
+				// 	OnSendInput(new KeyCodeEvent { code = k, up = false });
+				// });
 			}
-			OnSendInput(new KeyCodeEvent { code = code, up = false });
+			OnSendInput(new KeyCodeEvent { code = code, up = up });
 			if (!up)
 			{
-				_mappedKeysHeld.ForEach(k =>
-				{
-					OnSendInput(new KeyCodeEvent { code = k, up = false });
-				});
+				// This is supposed to be mods not mapped keys
+				// _mappedKeysHeld.ForEach(k =>
+				// {
+				// 	OnSendInput(new KeyCodeEvent { code = k, up = true });
+				// });
 			}
 		}
 

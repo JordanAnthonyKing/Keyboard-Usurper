@@ -11,21 +11,10 @@ namespace Keyboard_Usurper
 		private UnhookWindowsHookExSafeHandle _hookHandle = null;
 		private HOOKPROC _hookProc;
 		private List<KeyToKey> _mappings;
-		private vkCode[] _mods = new vkCode[]{ 
-			vkCode.VK_LSHIFT,
-			vkCode.VK_RSHIFT,
-			vkCode.VK_LWIN,
-			vkCode.VK_RWIN,
-			vkCode.VK_LCONTROL,
-			vkCode.VK_RCONTROL,
-			vkCode.VK_LMENU,
-			vkCode.VK_RMENU
-		};
-		private List<vkCode> _expectedInputs = new();
+		private StateMachine _activeStateMachine = null;
 
 		private readonly List<StateMachine> _stateMachines = new List<StateMachine>();
 
-		// This logic should really be moved out of the Keyboard hook into a setup thing
 		public KeyboardHook(List<KeyToKey> mappings)
 		{
 			_mappings = mappings;
@@ -40,10 +29,14 @@ namespace Keyboard_Usurper
 				if (activationKey != vkCode.VK_NULL && !usedMods.Contains(activationKey))
 				{
 					usedMods.Add(activationKey);
-					_stateMachines.Add(new StateMachine(
-					  activationKey, 
-					  _mappings.Where(x => x.From.ActivationKey == activationKey).ToList() }
-					));
+					var newMachine = new StateMachine(
+					  activationKey,
+					  _mappings.Where(x => x.From.ActivationKey == activationKey).ToList()
+					  );
+					newMachine.SendInput += SendInputEventHandler;
+					newMachine.Deactivate += DeactivateActiveMachine;
+
+					_stateMachines.Add(newMachine);
 				}
 			});
 
@@ -55,34 +48,54 @@ namespace Keyboard_Usurper
 			if (nCode == Constants.HC_ACTION)
 			{
 				KBDLLHOOKSTRUCT kbd = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
-				ProcessKey(wParam, (vkCode)kbd.vkCode);
+				var code = (vkCode)kbd.vkCode;
+				System.Diagnostics.Debug.WriteLine(code);
+				var swallow = ProcessKey(wParam, (vkCode)kbd.vkCode);
+				System.Diagnostics.Debug.WriteLine(swallow ? "swallow" : "call next");
+				if (swallow)
+                {
+					// Swallow
+					System.Diagnostics.Debug.WriteLine("Swallowed");
+					return (LRESULT)1;
+                }
 			}
-
+			// Don't swallow
+			System.Diagnostics.Debug.WriteLine("Called next");
 			return PInvoke.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
-		}
+		} 
 
 		private bool ProcessKey(WPARAM wParam, vkCode code)
 		{
-			// TODO: If it's a normal mod and the mod isn't remapped we need to skip over it?
-			// A normal mod will skip over itself by falling out of the logic.
-			// Touch cursor expects only one activation key, we have many, therefore we need
-			// to track them.
-			// I don't know if we should do this with async checks or by the same as _mappedKeys
+			StateMachine machine;
+			var keyDown = IsKeyDown(wParam);
+			System.Diagnostics.Debug.WriteLine(keyDown ? "down" : "up");
 
-
-			// TODO: This needs writing to use some sort of list that contains state machine starters
-			// And the logic needs (mostly) moving into the statemachines themselves
-
-
-			// 1. Do we have an active state machine?
-			// 2. Is this key an activation key for one of our state machines?
+			if (_activeStateMachine != null)
+            {
+				return _activeStateMachine.ProcessKey(IsKeyDown(wParam), code);
+            } 
+			else if ((machine = _stateMachines.Find(x => x.ActivationKey == code)) != null)
+            {
+				_activeStateMachine = machine;
+				return machine.ProcessKey(IsKeyDown(wParam), code);
+            }
+			else
+            {
+				// Normal mappings go here
+            }
 
 			// return ProcessEvent(e, code);
-			return true;
+			return false;
 		}
 
+		private void DeactivateActiveMachine(Object sender, EventArgs e)
+        {
+			_activeStateMachine = null;
+        }
 
-		// TODO: Remove or change this
+		private void SendInputEventHandler(Object sender, KeyCodeEvent e) 
+			=> SendInput(e.code, e.up);
+
 		private void SendInput(vkCode code, bool up = false)
 		{
 			INPUT[] inputs = new INPUT[1];
@@ -90,8 +103,6 @@ namespace Keyboard_Usurper
 			inputs[0].Anonymous.ki.wVk = (ushort)code;
 			if (up) inputs[0].Anonymous.ki.dwFlags = keybd_eventFlags.KEYEVENTF_KEYUP;
 
-			// TODO: Double check if this is needed
-			_expectedInputs.Add(code);
 			PInvoke.SendInput(new Span<INPUT>(inputs), Marshal.SizeOf<INPUT>());
 		}
 
