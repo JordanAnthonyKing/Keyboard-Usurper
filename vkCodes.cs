@@ -268,6 +268,7 @@ namespace Keyboard_Usurper
 		VK_OWM_CLEAR = 0xFE,
 		// This code is extra as there is no singular Win keycode
 		VK_WIN = 0xFF,
+		// This code is extra for validation purposes
 		VK_NULL = 0x00
 	}
 
@@ -431,7 +432,7 @@ namespace Keyboard_Usurper
 				case ";" : return vkCode.VK_OEM_1;
 				case "+" : return vkCode.VK_OEM_PLUS;
 				case "," : return vkCode.VK_OEM_COMMA;
-				case "-" : return vkCode.VK_MINUS;
+				case "MINUS" : return vkCode.VK_MINUS;
 				case "." : return vkCode.VK_PERIOD;
 				case "/" : return vkCode.VK_OEM_2;
 				case "~" : return vkCode.VK_OEM_3;
