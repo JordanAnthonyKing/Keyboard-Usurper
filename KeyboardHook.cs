@@ -145,9 +145,15 @@ namespace Keyboard_Usurper
 			foreach (vkCode code in activeMods)
 				SendInput(code, true);
 
+			foreach (vkCode code in binding.Mods)
+				SendInput(code);
+
 			// TODO: Send key's own modifiers
 			SendInput(binding.Code);
 			SendInput(binding.Code, true);
+
+			foreach (vkCode code in binding.Mods)
+				SendInput(code, true);
 
 			foreach (vkCode code in activeMods)
 				SendInput(code);

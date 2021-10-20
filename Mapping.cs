@@ -17,6 +17,7 @@ namespace Keyboard_Usurper
 		public IEnumerable<vkCode> Mods;
 		public vkCode ActivationKey;
 		public vkCode Code;
+		public bool WithMods;
 	}
 
 	public static class ConfigurationToMapping
@@ -64,7 +65,11 @@ namespace Keyboard_Usurper
 					},
 					To = new Key
 					{
-						Mods = toKeys.Take(toKeys.Length - 1).Select(x => StringToCode.ConvertTo(x)).ToArray(),
+						// TODO: Some code to detect single mod keys
+						Mods = toKeys
+							.Take(toKeys.Length - 1)
+							.Select(x => StringToCode.ConvertTo(x))
+							.Where(x => mods.Contains(x)),
 						Code = StringToCode.ConvertTo(toKeys.Last())
 					}
 				};

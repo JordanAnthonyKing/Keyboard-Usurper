@@ -459,7 +459,7 @@ namespace Keyboard_Usurper
 				case "W" : return vkCode.VK_WIN;
 			}
 
-			return vkCode.VK_0;
+			return vkCode.VK_NULL;
 		}
 	}
 
