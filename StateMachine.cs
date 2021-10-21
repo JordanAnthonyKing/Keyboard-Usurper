@@ -121,7 +121,7 @@ namespace Keyboard_Usurper
 
 		public vkCode ActivationKey;
 		private vkCode _savedKeyDown = vkCode.VK_NULL;
-		private readonly List<vkCode> _mappedKeysHeld = new List<vkCode>();
+		private readonly List<KeyToKey> _mappedKeysHeld = new List<KeyToKey>();
 
 		public StateMachine(vkCode activationKey, List<KeyToKey> mappings)
 		{
@@ -213,7 +213,7 @@ namespace Keyboard_Usurper
 				System.Diagnostics.Debug.WriteLine("activation key");
 				e = isKeyDown ? Event.ActivationDown : Event.ActivationUp;
 			}
-			else if (TranslateCode(code) != vkCode.VK_NULL)
+			else if (TranslateCode(code) != null)
 			{
 				System.Diagnostics.Debug.WriteLine("mapped key");
 				e = isKeyDown ? Event.MappedKeyDown : Event.MappedKeyUp;
@@ -281,12 +281,13 @@ namespace Keyboard_Usurper
 		private bool MapKey(vkCode code, bool up)
 		{
 			System.Diagnostics.Debug.WriteLine("MapKey");
-			vkCode newCode = TranslateCode(code);
+			KeyToKey newBinding = TranslateCode(code);
 
-			if (newCode != vkCode.VK_NULL)
+			if (newBinding != null)
 			{
-				if (!up) _mappedKeysHeld.Add(code);
-				KeyEvent(newCode, up);
+				if (!up) _mappedKeysHeld.Add(newBinding);
+				if (up) _mappedKeysHeld.Remove(newBinding);
+				ExecuteBinding(newBinding, up);
 				return true;
 			}
 			return false;
@@ -299,7 +300,7 @@ namespace Keyboard_Usurper
 			System.Diagnostics.Debug.WriteLine("DiscardKeyAndReleaseMappedKeys");
 			_mappedKeysHeld.ForEach(k =>
 			{
-				KeyEvent(code, true);
+				ExecuteBinding(k, true);
 			});
 			_mappedKeysHeld.Clear();
 			return true;
@@ -423,7 +424,7 @@ namespace Keyboard_Usurper
 			return true;
 		}
 
-		private vkCode TranslateCode(vkCode code)
+		private vkCode oldTranslateCode(vkCode code)
 		{
 			// TODO: Separate L and R mods
 			// TODO: Keys that allow extra mods or not
@@ -445,6 +446,33 @@ namespace Keyboard_Usurper
 			return map.To.Code;
 		}
 
+		// TODO Turn this into a function we can share
+		private KeyToKey TranslateCode(vkCode code)
+        {
+			List<vkCode> activeMods = new List<vkCode>();
+
+			// TODO: We can turn this into an interation method for reuse
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_LCONTROL) < 0 || PInvoke.GetAsyncKeyState((int)vkCode.VK_RCONTROL) < 0)
+				activeMods.Add(vkCode.VK_CONTROL);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_LSHIFT) < 0 || PInvoke.GetAsyncKeyState((int)vkCode.VK_RSHIFT) < 0)
+				activeMods.Add(vkCode.VK_SHIFT);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_LMENU) < 0 || PInvoke.GetAsyncKeyState((int)vkCode.VK_RMENU) < 0)
+				activeMods.Add(vkCode.VK_MENU);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_LWIN) < 0 || PInvoke.GetAsyncKeyState((int)vkCode.VK_RWIN) < 0)
+				activeMods.Add(vkCode.VK_WIN);
+
+			// Exact match
+			var toReturn = _mappings.Find(x => 
+                x.From.Code == code && 
+                x.From.Mods.All(y => activeMods.Contains(y)) &&
+                x.From.Mods.Count() == activeMods.Count // This may need rewriting when we separate L and R mods
+			);
+			if (toReturn != null) return toReturn;
+
+			// The same mods are active
+			return _mappings.Find(x => x.From.Code == code && x.From.Mods.All(y => activeMods.Contains(y)));
+        }
+
 		private void TapKey(vkCode code)
 		{
 			KeyDown(code);
@@ -461,6 +489,55 @@ namespace Keyboard_Usurper
 			KeyEvent(code, true);
 		}
 
+		// TODO: Make an event like sendinput
+		private void ExecuteBinding(KeyToKey binding, bool up = false)
+        {
+			List<vkCode> activeMods = new List<vkCode>();
+			// TODO: Use the reiteration method spoken about above
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_LCONTROL) < 0)
+				activeMods.Add(vkCode.VK_LCONTROL);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_RCONTROL) < 0)
+				activeMods.Add(vkCode.VK_RCONTROL);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_LSHIFT) < 0)
+				activeMods.Add(vkCode.VK_LSHIFT);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_RSHIFT) < 0)
+				activeMods.Add(vkCode.VK_LSHIFT);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_LMENU) < 0)
+				activeMods.Add(vkCode.VK_LMENU);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_RMENU) < 0)
+				activeMods.Add(vkCode.VK_RMENU);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_LWIN) < 0)
+				activeMods.Add(vkCode.VK_LWIN);
+			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_RWIN) < 0)
+				activeMods.Add(vkCode.VK_LWIN);
+
+			if(!binding.To.WithMods)
+                foreach (vkCode code in activeMods)
+                    OnSendInput(new KeyCodeEvent { code = code, up = true });
+
+			if(binding.To.WithMods)
+                foreach (vkCode code in binding.From.Mods)
+                    OnSendInput(new KeyCodeEvent { code = code, up = true});
+
+			foreach (vkCode code in binding.To.Mods)
+				OnSendInput(new KeyCodeEvent { code = code, up = false });
+
+			OnSendInput(new KeyCodeEvent { code = binding.To.Code, up = up});
+			// OnSendInput(new KeyCodeEvent { code = binding.To.Code, up = true});
+
+			foreach (vkCode code in binding.To.Mods)
+				OnSendInput(new KeyCodeEvent { code = code, up = true});
+
+			if(!binding.To.WithMods)
+                foreach (vkCode code in activeMods)
+                    OnSendInput(new KeyCodeEvent { code = code, up = false});
+
+			if(binding.To.WithMods)
+                foreach (vkCode code in binding.From.Mods)
+                    OnSendInput(new KeyCodeEvent { code = code, up = false});
+        }
+
+		// TODO: Replace with Sendinput calls probably
 		private void KeyEvent(vkCode code, bool up)
 		{
 			if (!up) // Only add modifiers on key down
