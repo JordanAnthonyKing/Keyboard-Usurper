@@ -12,6 +12,7 @@ namespace Keyboard_Usurper
 		private HOOKPROC _hookProc;
 		private List<KeyToKey> _mappings;
 		private StateMachine _activeStateMachine = null;
+		private List<KeyCodeEvent> _expectedKeys = new List<KeyCodeEvent>();
 
 		private readonly List<StateMachine> _stateMachines = new List<StateMachine>();
 
@@ -32,7 +33,7 @@ namespace Keyboard_Usurper
 					var newMachine = new StateMachine(
 					  activationKey,
 					  _mappings.Where(x => x.From.ActivationKey == activationKey).ToList()
-					  );
+					);
 					newMachine.SendInput += SendInputEventHandler;
 					newMachine.Deactivate += DeactivateActiveMachine;
 
@@ -51,18 +52,27 @@ namespace Keyboard_Usurper
 			{
 				KBDLLHOOKSTRUCT kbd = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
 				var code = (vkCode)kbd.vkCode;
-				System.Diagnostics.Debug.WriteLine(code);
-				var swallow = ProcessKey(wParam, (vkCode)kbd.vkCode);
-				System.Diagnostics.Debug.WriteLine(swallow ? "swallow" : "call next");
-				if (swallow)
+
+				var expectedIndex = _expectedKeys.FindIndex(x => x.code == code && x.up == !IsKeyDown(wParam));
+				if (expectedIndex < 0)
                 {
-					// Swallow
-					System.Diagnostics.Debug.WriteLine("Swallowed");
-					return (LRESULT)1;
+                    // System.Diagnostics.Debug.WriteLine(code);
+                    var swallow = ProcessKey(wParam, (vkCode)kbd.vkCode);
+                    // System.Diagnostics.Debug.WriteLine(swallow ? "swallow" : "call next");
+                    if (swallow)
+                    {
+                        // Swallow
+                        // System.Diagnostics.Debug.WriteLine("Swallowed");
+                        return (LRESULT)1;
+                    }
+                }
+				else
+                {
+					_expectedKeys.RemoveAt(expectedIndex);
                 }
 			}
 			// Don't swallow
-			System.Diagnostics.Debug.WriteLine("Called next");
+			// System.Diagnostics.Debug.WriteLine("Called next");
 			return PInvoke.CallNextHookEx(_hookHandle, nCode, wParam, lParam);
 		} 
 
@@ -70,7 +80,7 @@ namespace Keyboard_Usurper
 		{
 			StateMachine machine;
 			var keyDown = IsKeyDown(wParam);
-			System.Diagnostics.Debug.WriteLine(keyDown ? "down" : "up");
+			// System.Diagnostics.Debug.WriteLine(keyDown ? "down" : "up");
 
 			if (_activeStateMachine != null)
             {
@@ -179,8 +189,11 @@ namespace Keyboard_Usurper
 		private void DeactivateActiveMachine(Object sender, EventArgs e) =>
 			_activeStateMachine = null;
 
-		private void SendInputEventHandler(Object sender, KeyCodeEvent e) 
-			=> SendInput(e.code, e.up);
+		private void SendInputEventHandler(Object sender, KeyCodeEvent e)
+        {
+			_expectedKeys.Add(e);
+			SendInput(e.code, e.up);
+        }
 
 		private void SendInput(vkCode code, bool up = false)
 		{

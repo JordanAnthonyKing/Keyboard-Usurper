@@ -196,7 +196,7 @@ namespace Keyboard_Usurper
 		private void MoveNext(Event command)
 		{
 			EndState endState = GetNext(command);
-			System.Diagnostics.Debug.WriteLine(endState.NewState);
+			// System.Diagnostics.Debug.WriteLine(endState.NewState);
 			if (endState.NewState != State.Self)
             {
 				CurrentState = endState.NewState;
@@ -210,17 +210,17 @@ namespace Keyboard_Usurper
 
 			if (code == ActivationKey)
 			{
-				System.Diagnostics.Debug.WriteLine("activation key");
+				// System.Diagnostics.Debug.WriteLine("activation key");
 				e = isKeyDown ? Event.ActivationDown : Event.ActivationUp;
 			}
 			else if (TranslateCode(code) != null)
 			{
-				System.Diagnostics.Debug.WriteLine("mapped key");
+				// System.Diagnostics.Debug.WriteLine("mapped key");
 				e = isKeyDown ? Event.MappedKeyDown : Event.MappedKeyUp;
 			}
 			else
 			{
-				System.Diagnostics.Debug.WriteLine("other key");
+				// System.Diagnostics.Debug.WriteLine("other key");
 				e = isKeyDown ? Event.OtherKeyDown : Event.OtherKeyUp;
 			}
 
@@ -233,7 +233,7 @@ namespace Keyboard_Usurper
 			MoveNext(e);
 			if (CurrentState == State.Idle)
             {
-				System.Diagnostics.Debug.WriteLine("Deactivated");
+				// System.Diagnostics.Debug.WriteLine("Deactivated");
 				OnDeactivate();
             }
 
@@ -280,7 +280,7 @@ namespace Keyboard_Usurper
 
 		private bool MapKey(vkCode code, bool up)
 		{
-			System.Diagnostics.Debug.WriteLine("MapKey");
+			// System.Diagnostics.Debug.WriteLine("MapKey");
 			KeyToKey newBinding = TranslateCode(code);
 
 			if (newBinding != null)
@@ -297,7 +297,7 @@ namespace Keyboard_Usurper
 
 		private bool DiscardKeyAndReleaseMappedKeys(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("DiscardKeyAndReleaseMappedKeys");
+			// System.Diagnostics.Debug.WriteLine("DiscardKeyAndReleaseMappedKeys");
 			_mappedKeysHeld.ForEach(k =>
 			{
 				ExecuteBinding(k, true);
@@ -308,7 +308,7 @@ namespace Keyboard_Usurper
 
 		private bool TapActivationKey(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("TapActivationKey");
+			// System.Diagnostics.Debug.WriteLine("TapActivationKey");
 			TapKey(ActivationKey);
 			return true;
 		}
@@ -323,13 +323,13 @@ namespace Keyboard_Usurper
 
 		private bool MapKeyDown(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("MapKeyDown");
+			// System.Diagnostics.Debug.WriteLine("MapKeyDown");
 			return MapKey(code, false);
 		}
 
 		private bool MapKeyUp(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("MapKeyUp");
+			// System.Diagnostics.Debug.WriteLine("MapKeyUp");
 			return MapKey(code, true);
 		}
 
@@ -346,7 +346,7 @@ namespace Keyboard_Usurper
 
 		private bool EmitSaved()
 		{
-			System.Diagnostics.Debug.WriteLine("EmitSaved");
+			// System.Diagnostics.Debug.WriteLine("EmitSaved");
 			if (_savedKeyDown != vkCode.VK_NULL)
 			{
 				KeyDown(_savedKeyDown);
@@ -357,7 +357,7 @@ namespace Keyboard_Usurper
 
 		private bool EmitActDownSavedDownActUp(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("EmitActDownSavedDownActUp");
+			// System.Diagnostics.Debug.WriteLine("EmitActDownSavedDownActUp");
 			KeyDown(ActivationKey);
 			EmitSaved();
 			KeyUp(ActivationKey);
@@ -366,7 +366,7 @@ namespace Keyboard_Usurper
 
 		private bool EmitSavedDownAndActUp(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("EmitSavedDownAndActUp");
+			// System.Diagnostics.Debug.WriteLine("EmitSavedDownAndActUp");
 			EmitSaved();
 			KeyUp(ActivationKey);
 			return true;
@@ -374,7 +374,7 @@ namespace Keyboard_Usurper
 
 		private void MapSavedDown()
 		{
-			System.Diagnostics.Debug.WriteLine("MapSavedDown");
+			// System.Diagnostics.Debug.WriteLine("MapSavedDown");
 			if (_savedKeyDown != vkCode.VK_NULL)
 			{
 				MapKeyDown(_savedKeyDown);
@@ -384,7 +384,7 @@ namespace Keyboard_Usurper
 
 		private bool MapSavedAndMapCurrentDown(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("MapSavedAndMapCurrentDown");
+			// System.Diagnostics.Debug.WriteLine("MapSavedAndMapCurrentDown");
 			MapSavedDown();
 			MapKeyDown(code);
 			return true;
@@ -392,7 +392,7 @@ namespace Keyboard_Usurper
 
 		private bool MapSavedAndMapCurrentUp(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("MapSavedAndMapCurrentUp");
+			// System.Diagnostics.Debug.WriteLine("MapSavedAndMapCurrentUp");
 			MapSavedDown();
 			MapKeyUp(code);
 			return true;
@@ -400,7 +400,7 @@ namespace Keyboard_Usurper
 
 		private bool EmitActSavedAndCurrentDown(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("EmitActSavedAndCurrentDown");
+			// System.Diagnostics.Debug.WriteLine("EmitActSavedAndCurrentDown");
 			KeyDown(ActivationKey);
 			EmitSaved();
 			KeyDown(code);
@@ -409,7 +409,7 @@ namespace Keyboard_Usurper
 
 		private bool EmitActSavedAndCurrentUp(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("EmitActSavedAndCurrentUp");
+			// System.Diagnostics.Debug.WriteLine("EmitActSavedAndCurrentUp");
 			KeyDown(ActivationKey);
 			EmitSaved();
 			KeyUp(code);
@@ -418,7 +418,7 @@ namespace Keyboard_Usurper
 
 		private bool EmitSavedAndCurrentDown(vkCode code)
 		{
-			System.Diagnostics.Debug.WriteLine("EmitSavedAndCurrentDown");
+			// System.Diagnostics.Debug.WriteLine("EmitSavedAndCurrentDown");
 			EmitSaved();
 			KeyDown(code);
 			return true;
