@@ -430,7 +430,7 @@ namespace Keyboard_Usurper
 				case "APP1" : return vkCode.VK_LAUNCH_APP_1;
 				case "APP2" : return vkCode.VK_LAUNCH_APP_2;
 				case ";" : return vkCode.VK_OEM_1;
-				case "+" : return vkCode.VK_OEM_PLUS;
+				case "PLUS" : return vkCode.VK_OEM_PLUS;
 				case "," : return vkCode.VK_OEM_COMMA;
 				case "MINUS" : return vkCode.VK_MINUS;
 				case "." : return vkCode.VK_PERIOD;

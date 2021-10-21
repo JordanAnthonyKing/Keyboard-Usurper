@@ -85,7 +85,7 @@ namespace Keyboard_Usurper
             {
 				if (IsKeyDown(wParam))
                 {
-					Key binding = TranslateCode(code);
+					KeyToKey binding = MatchBinding(code);
 					if (binding != null)
                     {
 						ExecuteBinding(binding);
@@ -98,7 +98,7 @@ namespace Keyboard_Usurper
 			return false;
 		}
 
-		private Key TranslateCode(vkCode code)
+		private KeyToKey MatchBinding(vkCode code)
 		{
 			List<vkCode> activeMods = new List<vkCode>();
 
@@ -118,10 +118,18 @@ namespace Keyboard_Usurper
 				activeMods.Add(vkCode.VK_WIN);
 
 			// Exact match
-			return _mappings.Find(x => x.From.Code == code && x.From.Mods.All(y => activeMods.Contains(y)))?.To;
+			var toReturn = _mappings.Find(x => 
+                x.From.Code == code && 
+                x.From.Mods.All(y => activeMods.Contains(y)) &&
+                x.From.Mods.Count() == activeMods.Count // This may need rewriting when we separate L and R mods
+			);
+			if (toReturn != null) return toReturn;
+
+			// The same mods are active
+			return _mappings.Find(x => x.From.Code == code && x.From.Mods.All(y => activeMods.Contains(y)));
 		}
 
-		private void ExecuteBinding(Key binding)
+		private void ExecuteBinding(KeyToKey binding)
         {
 			List<vkCode> activeMods = new List<vkCode>();
 			// TODO: Use the reiteration method spoken about above
@@ -142,21 +150,30 @@ namespace Keyboard_Usurper
 			if (PInvoke.GetAsyncKeyState((int)vkCode.VK_RWIN) < 0)
 				activeMods.Add(vkCode.VK_LWIN);
 
-			foreach (vkCode code in activeMods)
-				SendInput(code, true);
+			if(!binding.To.WithMods)
+                foreach (vkCode code in activeMods)
+                    SendInput(code, true);
 
-			foreach (vkCode code in binding.Mods)
+			if(binding.To.WithMods)
+                foreach (vkCode code in binding.From.Mods)
+                    SendInput(code, true);
+
+			foreach (vkCode code in binding.To.Mods)
 				SendInput(code);
 
-			// TODO: Send key's own modifiers
-			SendInput(binding.Code);
-			SendInput(binding.Code, true);
+			SendInput(binding.To.Code);
+			SendInput(binding.To.Code, true);
 
-			foreach (vkCode code in binding.Mods)
+			foreach (vkCode code in binding.To.Mods)
 				SendInput(code, true);
 
-			foreach (vkCode code in activeMods)
-				SendInput(code);
+			if(!binding.To.WithMods)
+                foreach (vkCode code in activeMods)
+                    SendInput(code);
+
+			if(binding.To.WithMods)
+                foreach (vkCode code in binding.From.Mods)
+                    SendInput(code);
         }
 
 		private void DeactivateActiveMachine(Object sender, EventArgs e) =>

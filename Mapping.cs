@@ -70,7 +70,10 @@ namespace Keyboard_Usurper
 							.Take(toKeys.Length - 1)
 							.Select(x => StringToCode.ConvertTo(x))
 							.Where(x => mods.Contains(x)),
-						Code = StringToCode.ConvertTo(toKeys.Last())
+						Code = toKeys.Last()[0] == '+' ?
+  						StringToCode.ConvertTo(toKeys.Last().Substring(1)) :
+						StringToCode.ConvertTo(toKeys.Last()),
+						WithMods = toKeys.Last()[0] == '+'
 					}
 				};
 
