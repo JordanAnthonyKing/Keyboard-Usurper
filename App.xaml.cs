@@ -20,7 +20,7 @@ namespace Keyboard_Usurper
 		private KeyboardHook _hook;
 		// Magic never read code that works
         private NotifyIcon _notifyIcon;
-		private event EventHandler _test;
+		private ContextMenuStrip _contextMenuStrip = new();
 
         [STAThread]
 		private void Usurp(object sender, StartupEventArgs e)
@@ -30,17 +30,14 @@ namespace Keyboard_Usurper
 
 			_hook = new KeyboardHook(ConfigurationToMapping.Convert(config));
 
-			// _test += TestEventHandler;
-
-            var contextMenuStrip = new ContextMenuStrip();
-			contextMenuStrip.Items.Add("Usurped", null, TestEventHandler);
+			_contextMenuStrip.Items.Add("Disable", null, TestEventHandler);
 
 			_notifyIcon = new NotifyIcon
             {
                 Text = "Keyboard Usurper",
                 Icon = Keyboard_Usurper.Properties.Resources.crown,
                 Visible = true,
-				ContextMenuStrip = contextMenuStrip
+				ContextMenuStrip = _contextMenuStrip,
             };
 
 			// MainWindow main = new MainWindow();
@@ -49,7 +46,17 @@ namespace Keyboard_Usurper
 
 		private void TestEventHandler(object sender, EventArgs e)
         {
-			System.Diagnostics.Debug.WriteLine("working");
+			_hook.Active = !_hook.Active;
+			if (_hook.Active)
+            {
+				_contextMenuStrip.Items.Clear();
+				_contextMenuStrip.Items.Add("Disable", null, TestEventHandler);
+            } 
+			else
+            {
+				_contextMenuStrip.Items.Clear();
+				_contextMenuStrip.Items.Add("Enable", null, TestEventHandler);
+            }
         }
 
 		private void Unsurp(object sender, ExitEventArgs e)

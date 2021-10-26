@@ -8,6 +8,8 @@ namespace Keyboard_Usurper
 {
 	public class KeyboardHook
 	{
+		public bool Active = true;
+
 		private UnhookWindowsHookExSafeHandle _hookHandle = null;
 		private HOOKPROC _hookProc;
 		private List<KeyToKey> _mappings;
@@ -48,7 +50,7 @@ namespace Keyboard_Usurper
 
 		private LRESULT HookCallBack(int nCode, WPARAM wParam, LPARAM lParam)
 		{
-			if (nCode == Constants.HC_ACTION)
+			if (nCode == Constants.HC_ACTION && Active)
 			{
 				KBDLLHOOKSTRUCT kbd = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
 				var code = (vkCode)kbd.vkCode;
