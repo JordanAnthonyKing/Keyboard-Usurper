@@ -6,10 +6,17 @@ using System.Threading.Tasks;
 
 namespace Keyboard_Usurper
 {
+	// TODO: Make most of this stuff readonly or get not set
 	public class KeyToKey
 	{
 		public Key From;
 		public Key To;
+		// TODO: Figure out how to tie this to dynamic functions
+		// Or we could just give each a set ID? and if no To then add that set ID
+		// to disabled? Needs special case for the actual toggler...
+		// public Func<bool> Enabled;
+		// public Func<string, null> ToggleFunc;
+
 	}
 
 	public class Key

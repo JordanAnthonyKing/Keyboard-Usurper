@@ -8,8 +8,16 @@ namespace Keyboard_Usurper
 {
 	public class Configuration
 	{
-		public ConfigBinding[] bindings { get; set; }
+		public BindingSet[] bindings { get; set; }
 	}
+
+	public class BindingSet
+    {
+		public string name { get; set; }
+		public bool enableOnStart { get; set; }
+		public string toggleBinding { get; set; }
+		public ConfigBinding[] bindings { get; set; }
+    }
 
 	public class ConfigBinding
 	{
